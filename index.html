@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PullData</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f11;
+      --surface: #18181c;
+      --surface2: #212126;
+      --border: #2e2e36;
+      --accent: #6af0a8;
+      --accent-dim: rgba(106,240,168,0.12);
+      --accent-dim2: rgba(106,240,168,0.06);
+      --text: #e8e8ea;
+      --text-muted: #7a7a85;
+      --text-dim: #4a4a55;
+      --red: #ff6b6b;
+      --red-dim: rgba(255,107,107,0.1);
+      --yellow: #ffd166;
+      --mono: 'DM Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-mark svg { width: 16px; height: 16px; }
+
+    .logo-text {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .logo-text span { color: var(--accent); }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-area::-webkit-scrollbar { width: 4px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--text-dim);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .empty-state .big-text {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .suggestion {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--mono);
+    }
+
+    .suggestion:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim2);
+    }
+
+    /* Messages */
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: fadeUp 0.2s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { align-items: flex-end; }
+    .message.assistant { align-items: flex-start; }
+
+    .message-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0 4px;
+    }
+
+    .bubble {
+      max-width: 680px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.6;
+    }
+
+    .message.user .bubble {
+      background: var(--accent-dim);
+      border: 1px solid rgba(106,240,168,0.2);
+      border-bottom-right-radius: 4px;
+      color: var(--text);
+    }
+
+    .message.assistant .bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Query confirmation card */
+    .confirm-card {
+      max-width: 680px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      animation: fadeUp 0.2s ease;
+    }
+
+    .confirm-card-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .confirm-card-header span {
+      font-family: var(--mono);
+      font-size: 10px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .query-block {
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      background: var(--accent-dim2);
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.8;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .confirm-actions {
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 7px 16px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-family: var(--mono);
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+
+    .btn-confirm {
+      background: var(--accent);
+      color: #0f0f11;
+    }
+
+    .btn-confirm:hover { background: #8ff7be; }
+
+    .btn-cancel {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-cancel:hover {
+      border-color: var(--red);
+      color: var(--red);
+      background: var(--red-dim);
+    }
+
+    /* Results table */
+    .results-card {
+      max-width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      animation: fadeUp 0.2s ease;
+    }
+
+    .results-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .results-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .results-count {
+      font-family: var(--mono);
+      font-size: 10px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-download {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid rgba(106,240,168,0.3);
+      transition: all 0.15s;
+    }
+
+    .btn-download:hover {
+      background: var(--accent-dim);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .table-wrap::-webkit-scrollbar { height: 4px; width: 4px; }
+    .table-wrap::-webkit-scrollbar-track { background: transparent; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    th {
+      padding: 8px 14px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      padding: 8px 14px;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(46,46,54,0.5);
+      white-space: nowrap;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); color: var(--text); }
+
+    td.null-val { color: var(--text-dim); font-style: italic; }
+
+    /* Thinking indicator */
+    .thinking {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      border-bottom-left-radius: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      max-width: 300px;
+    }
+
+    .thinking-dots {
+      display: flex;
+      gap: 3px;
+    }
+
+    .thinking-dots span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: blink 1.2s infinite;
+    }
+
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; }
+      40% { opacity: 1; }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 10px 10px 16px;
+      transition: border-color 0.15s;
+    }
+
+    .input-row:focus-within {
+      border-color: rgba(106,240,168,0.4);
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      max-height: 120px;
+      min-height: 22px;
+    }
+
+    textarea::placeholder { color: var(--text-dim); }
+
+    .send-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .send-btn:hover { background: #8ff7be; }
+    .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+    .send-btn svg { width: 16px; height: 16px; }
+
+    .input-hint {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="5" height="5" rx="1" fill="#0f0f11"/>
+        <rect x="9" y="2" width="5" height="5" rx="1" fill="#0f0f11"/>
+        <rect x="2" y="9" width="5" height="5" rx="1" fill="#0f0f11"/>
+        <rect x="9" y="9" width="5" height="5" rx="1" fill="#0f0f11" opacity="0.4"/>
+      </svg>
+    </div>
+    <div class="logo-text">Pull<span>Data</span></div>
+  </div>
+  <div class="status">
+    <div class="status-dot"></div>
+    Salesforce connected
+  </div>
+</header>
+
+<div class="chat-area" id="chatArea">
+  <div class="empty-state" id="emptyState">
+    <div class="big-text">Ask anything about your Salesforce data</div>
+    <div style="font-size:12px; color: var(--text-dim);">I'll write the query, you confirm it, then download your report.</div>
+    <div class="suggestions">
+      <div class="suggestion" onclick="useSuggestion(this)">All contacts with email</div>
+      <div class="suggestion" onclick="useSuggestion(this)">Open opportunities over $10k</div>
+      <div class="suggestion" onclick="useSuggestion(this)">Accounts in California</div>
+      <div class="suggestion" onclick="useSuggestion(this)">Contacts without a phone number</div>
+      <div class="suggestion" onclick="useSuggestion(this)">All campaigns this year</div>
+    </div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <textarea
+      id="userInput"
+      placeholder="Describe the report you need..."
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendRequest()">
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M8 13V3M8 3L4 7M8 3L12 7" stroke="#0f0f11" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
+</div>
+
+<script>
+  const chatArea = document.getElementById('chatArea');
+  const emptyState = document.getElementById('emptyState');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  let pendingSOQL = null;
+  let pendingConfirmCard = null;
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendRequest();
+    }
+  }
+
+  function useSuggestion(el) {
+    userInput.value = el.textContent;
+    autoResize(userInput);
+    userInput.focus();
+    sendRequest();
+  }
+
+  function hideEmpty() {
+    if (emptyState) emptyState.style.display = 'none';
+  }
+
+  function scrollBottom() {
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function addMessage(role, text) {
+    hideEmpty();
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    div.innerHTML = `
+      <div class="message-label">${role === 'user' ? 'You' : 'PullData'}</div>
+      <div class="bubble">${text}</div>
+    `;
+    chatArea.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function addThinking() {
+    hideEmpty();
+    const div = document.createElement('div');
+    div.className = 'message assistant';
+    div.innerHTML = `
+      <div class="message-label">PullData</div>
+      <div class="thinking">
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
+        Generating query...
+      </div>
+    `;
+    chatArea.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function addConfirmCard(soql) {
+    hideEmpty();
+    const div = document.createElement('div');
+    div.className = 'message assistant';
+    div.innerHTML = `
+      <div class="message-label">PullData</div>
+      <div class="confirm-card">
+        <div class="confirm-card-header">
+          <span>SOQL QUERY</span>
+          Here's what I'll run — does this look right?
+        </div>
+        <div class="query-block">${soql}</div>
+        <div class="confirm-actions">
+          <button class="btn btn-confirm" onclick="confirmQuery()">Run this query</button>
+          <button class="btn btn-cancel" onclick="cancelQuery(this)">Cancel</button>
+        </div>
+      </div>
+    `;
+    chatArea.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function addResultsCard(records, total) {
+    if (!records || records.length === 0) {
+      addMessage('assistant', 'Query ran successfully but returned no records.');
+      return;
+    }
+
+    const keys = Object.keys(records[0]).filter(k => k !== 'attributes');
+
+    const headers = keys.map(k => `<th>${k}</th>`).join('');
+    const rows = records.map(r => {
+      const cells = keys.map(k => {
+        const val = r[k];
+        if (val === null || val === undefined) return `<td class="null-val">—</td>`;
+        return `<td title="${val}">${val}</td>`;
+      }).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    const div = document.createElement('div');
+    div.className = 'results-card';
+    div.innerHTML = `
+      <div class="results-header">
+        <div class="results-header-left">
+          <span class="results-count">${total} record${total !== 1 ? 's' : ''}</span>
+          Results
+        </div>
+        <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>${headers}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+    chatArea.appendChild(div);
+    scrollBottom();
+
+    // Store for CSV download
+    window.lastResults = { records, keys };
+  }
+
+  function downloadCSV() {
+    if (!window.lastResults) return;
+    const { records, keys } = window.lastResults;
+    const header = keys.join(',');
+    const rows = records.map(r =>
+      keys.map(k => {
+        const val = r[k];
+        if (val === null || val === undefined) return '';
+        const str = String(val);
+        return str.includes(',') || str.includes('"') || str.includes('\n')
+          ? `"${str.replace(/"/g, '""')}"` : str;
+      }).join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pulldata-export-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function sendRequest() {
+    const text = userInput.value.trim();
+    if (!text || sendBtn.disabled) return;
+
+    userInput.value = '';
+    autoResize(userInput);
+    sendBtn.disabled = true;
+
+    addMessage('user', text);
+    const thinking = addThinking();
+
+    try {
+      const res = await fetch('http://127.0.0.1:3000/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: text })
+      });
+      const data = await res.json();
+      thinking.remove();
+
+      if (data.error) {
+        addMessage('assistant', `Error: ${data.error}`);
+      } else {
+        pendingSOQL = data.soql;
+        pendingConfirmCard = addConfirmCard(data.soql);
+      }
+    } catch (err) {
+      thinking.remove();
+      addMessage('assistant', 'Could not reach the server. Make sure app.py is running.');
+    }
+
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+
+  async function confirmQuery() {
+    if (!pendingSOQL) return;
+    const soql = pendingSOQL;
+    pendingSOQL = null;
+
+    // Disable buttons
+    if (pendingConfirmCard) {
+      pendingConfirmCard.querySelectorAll('button').forEach(b => b.disabled = true);
+    }
+
+    const thinking = addThinking();
+    thinking.querySelector('.thinking').lastChild.textContent = ' Running query...';
+
+    try {
+      const res = await fetch('http://127.0.0.1:3000/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soql })
+      });
+      const data = await res.json();
+      thinking.remove();
+
+      if (data.error) {
+        addMessage('assistant', `Salesforce error: ${data.error}`);
+      } else {
+        addResultsCard(data.records, data.total);
+      }
+    } catch (err) {
+      thinking.remove();
+      addMessage('assistant', 'Could not reach the server.');
+    }
+  }
+
+  function cancelQuery(btn) {
+    btn.closest('.message').remove();
+    pendingSOQL = null;
+    addMessage('assistant', 'Cancelled. Ask me for a different report.');
+  }
+</script>
+</body>
+</html>
