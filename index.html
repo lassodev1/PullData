@@ -704,7 +704,7 @@
     const thinking = addThinking();
 
     try {
-      const res = await fetch('http://127.0.0.1:3000/ask', {
+      const res = await fetch('https://pulldata-production.up.railway.app/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request: text })
@@ -741,7 +741,7 @@
     thinking.querySelector('.thinking').lastChild.textContent = ' Running query...';
 
     try {
-      const res = await fetch('http://127.0.0.1:3000/confirm', {
+      const res = await fetch('https://pulldata-production.up.railway.app/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ soql })
