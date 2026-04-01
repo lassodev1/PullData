@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+ 
     :root {
       --bg: #0f0f11;
       --surface: #18181c;
@@ -25,9 +25,9 @@
       --mono: 'DM Mono', monospace;
       --sans: 'DM Sans', sans-serif;
     }
-
+ 
     html, body { height: 100%; }
-
+ 
     body {
       background: var(--bg);
       color: var(--text);
@@ -39,7 +39,7 @@
       height: 100vh;
       overflow: hidden;
     }
-
+ 
     /* Header */
     header {
       display: flex;
@@ -51,13 +51,13 @@
       flex-shrink: 0;
       background: var(--surface);
     }
-
+ 
     .logo {
       display: flex;
       align-items: center;
       gap: 10px;
     }
-
+ 
     .logo-mark {
       width: 28px;
       height: 28px;
@@ -67,9 +67,9 @@
       align-items: center;
       justify-content: center;
     }
-
+ 
     .logo-mark svg { width: 16px; height: 16px; }
-
+ 
     .logo-text {
       font-family: var(--mono);
       font-size: 15px;
@@ -77,9 +77,9 @@
       letter-spacing: -0.02em;
       color: var(--text);
     }
-
+ 
     .logo-text span { color: var(--accent); }
-
+ 
     .status {
       display: flex;
       align-items: center;
@@ -88,7 +88,7 @@
       font-size: 11px;
       color: var(--text-muted);
     }
-
+ 
     .status-dot {
       width: 6px;
       height: 6px;
@@ -96,12 +96,12 @@
       background: var(--accent);
       animation: pulse 2s infinite;
     }
-
+ 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
-
+ 
     /* Chat area */
     .chat-area {
       flex: 1;
@@ -112,11 +112,11 @@
       gap: 16px;
       scroll-behavior: smooth;
     }
-
+ 
     .chat-area::-webkit-scrollbar { width: 4px; }
     .chat-area::-webkit-scrollbar-track { background: transparent; }
     .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
+ 
     /* Empty state */
     .empty-state {
       flex: 1;
@@ -129,14 +129,14 @@
       text-align: center;
       padding: 40px;
     }
-
+ 
     .empty-state .big-text {
       font-family: var(--mono);
       font-size: 13px;
       color: var(--text-muted);
       margin-bottom: 4px;
     }
-
+ 
     .suggestions {
       display: flex;
       flex-wrap: wrap;
@@ -144,7 +144,7 @@
       justify-content: center;
       margin-top: 8px;
     }
-
+ 
     .suggestion {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -156,13 +156,13 @@
       transition: all 0.15s;
       font-family: var(--mono);
     }
-
+ 
     .suggestion:hover {
       border-color: var(--accent);
       color: var(--accent);
       background: var(--accent-dim2);
     }
-
+ 
     /* Messages */
     .message {
       display: flex;
@@ -170,15 +170,15 @@
       gap: 4px;
       animation: fadeUp 0.2s ease;
     }
-
+ 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
+ 
     .message.user { align-items: flex-end; }
     .message.assistant { align-items: flex-start; }
-
+ 
     .message-label {
       font-family: var(--mono);
       font-size: 10px;
@@ -187,27 +187,27 @@
       text-transform: uppercase;
       padding: 0 4px;
     }
-
+ 
     .bubble {
       max-width: 680px;
       padding: 12px 16px;
       border-radius: 12px;
       line-height: 1.6;
     }
-
+ 
     .message.user .bubble {
       background: var(--accent-dim);
       border: 1px solid rgba(106,240,168,0.2);
       border-bottom-right-radius: 4px;
       color: var(--text);
     }
-
+ 
     .message.assistant .bubble {
       background: var(--surface);
       border: 1px solid var(--border);
       border-bottom-left-radius: 4px;
     }
-
+ 
     /* Query confirmation card */
     .confirm-card {
       max-width: 680px;
@@ -217,7 +217,7 @@
       overflow: hidden;
       animation: fadeUp 0.2s ease;
     }
-
+ 
     .confirm-card-header {
       padding: 12px 16px;
       border-bottom: 1px solid var(--border);
@@ -227,7 +227,7 @@
       font-size: 12px;
       color: var(--text-muted);
     }
-
+ 
     .confirm-card-header span {
       font-family: var(--mono);
       font-size: 10px;
@@ -237,7 +237,7 @@
       border-radius: 4px;
       letter-spacing: 0.05em;
     }
-
+ 
     .query-block {
       padding: 14px 16px;
       font-family: var(--mono);
@@ -249,13 +249,13 @@
       line-height: 1.8;
       border-bottom: 1px solid var(--border);
     }
-
+ 
     .confirm-actions {
       padding: 12px 16px;
       display: flex;
       gap: 8px;
     }
-
+ 
     .btn {
       padding: 7px 16px;
       border-radius: 7px;
@@ -266,26 +266,26 @@
       transition: all 0.15s;
       font-weight: 500;
     }
-
+ 
     .btn-confirm {
       background: var(--accent);
       color: #0f0f11;
     }
-
+ 
     .btn-confirm:hover { background: #8ff7be; }
-
+ 
     .btn-cancel {
       background: transparent;
       color: var(--text-muted);
       border: 1px solid var(--border);
     }
-
+ 
     .btn-cancel:hover {
       border-color: var(--red);
       color: var(--red);
       background: var(--red-dim);
     }
-
+ 
     /* Results table */
     .results-card {
       max-width: 100%;
@@ -295,7 +295,7 @@
       overflow: hidden;
       animation: fadeUp 0.2s ease;
     }
-
+ 
     .results-header {
       padding: 12px 16px;
       border-bottom: 1px solid var(--border);
@@ -303,7 +303,7 @@
       align-items: center;
       justify-content: space-between;
     }
-
+ 
     .results-header-left {
       display: flex;
       align-items: center;
@@ -311,7 +311,7 @@
       font-size: 12px;
       color: var(--text-muted);
     }
-
+ 
     .results-count {
       font-family: var(--mono);
       font-size: 10px;
@@ -320,7 +320,7 @@
       padding: 2px 8px;
       border-radius: 4px;
     }
-
+ 
     .btn-download {
       padding: 5px 12px;
       border-radius: 6px;
@@ -332,28 +332,28 @@
       border: 1px solid rgba(106,240,168,0.3);
       transition: all 0.15s;
     }
-
+ 
     .btn-download:hover {
       background: var(--accent-dim);
     }
-
+ 
     .table-wrap {
       overflow-x: auto;
       max-height: 320px;
       overflow-y: auto;
     }
-
+ 
     .table-wrap::-webkit-scrollbar { height: 4px; width: 4px; }
     .table-wrap::-webkit-scrollbar-track { background: transparent; }
     .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
+ 
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
       font-family: var(--mono);
     }
-
+ 
     th {
       padding: 8px 14px;
       text-align: left;
@@ -368,7 +368,7 @@
       position: sticky;
       top: 0;
     }
-
+ 
     td {
       padding: 8px 14px;
       color: var(--text-muted);
@@ -378,12 +378,12 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
+ 
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--surface2); color: var(--text); }
-
+ 
     td.null-val { color: var(--text-dim); font-style: italic; }
-
+ 
     /* Thinking indicator */
     .thinking {
       display: flex;
@@ -399,12 +399,12 @@
       font-family: var(--mono);
       max-width: 300px;
     }
-
+ 
     .thinking-dots {
       display: flex;
       gap: 3px;
     }
-
+ 
     .thinking-dots span {
       width: 4px;
       height: 4px;
@@ -412,15 +412,15 @@
       background: var(--accent);
       animation: blink 1.2s infinite;
     }
-
+ 
     .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
     .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
-
+ 
     @keyframes blink {
       0%, 80%, 100% { opacity: 0.2; }
       40% { opacity: 1; }
     }
-
+ 
     /* Input area */
     .input-area {
       padding: 16px 24px;
@@ -428,7 +428,7 @@
       background: var(--surface);
       flex-shrink: 0;
     }
-
+ 
     .input-row {
       display: flex;
       gap: 10px;
@@ -439,11 +439,11 @@
       padding: 10px 10px 10px 16px;
       transition: border-color 0.15s;
     }
-
+ 
     .input-row:focus-within {
       border-color: rgba(106,240,168,0.4);
     }
-
+ 
     textarea {
       flex: 1;
       background: transparent;
@@ -457,9 +457,9 @@
       max-height: 120px;
       min-height: 22px;
     }
-
+ 
     textarea::placeholder { color: var(--text-dim); }
-
+ 
     .send-btn {
       width: 34px;
       height: 34px;
@@ -473,11 +473,11 @@
       flex-shrink: 0;
       transition: all 0.15s;
     }
-
+ 
     .send-btn:hover { background: #8ff7be; }
     .send-btn:disabled { background: var(--border); cursor: not-allowed; }
     .send-btn svg { width: 16px; height: 16px; }
-
+ 
     .input-hint {
       font-family: var(--mono);
       font-size: 10px;
@@ -488,7 +488,7 @@
   </style>
 </head>
 <body>
-
+ 
 <header>
   <div class="logo">
     <div class="logo-mark">
@@ -506,7 +506,7 @@
     Salesforce connected
   </div>
 </header>
-
+ 
 <div class="chat-area" id="chatArea">
   <div class="empty-state" id="emptyState">
     <div class="big-text">Ask anything about your Salesforce data</div>
@@ -520,7 +520,7 @@
     </div>
   </div>
 </div>
-
+ 
 <div class="input-area">
   <div class="input-row">
     <textarea
@@ -538,43 +538,43 @@
   </div>
   <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
 </div>
-
+ 
 <script>
   const chatArea = document.getElementById('chatArea');
   const emptyState = document.getElementById('emptyState');
   const userInput = document.getElementById('userInput');
   const sendBtn = document.getElementById('sendBtn');
-
+ 
   let pendingSOQL = null;
   let pendingConfirmCard = null;
-
+ 
   function autoResize(el) {
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
   }
-
+ 
   function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendRequest();
     }
   }
-
+ 
   function useSuggestion(el) {
     userInput.value = el.textContent;
     autoResize(userInput);
     userInput.focus();
     sendRequest();
   }
-
+ 
   function hideEmpty() {
     if (emptyState) emptyState.style.display = 'none';
   }
-
+ 
   function scrollBottom() {
     chatArea.scrollTop = chatArea.scrollHeight;
   }
-
+ 
   function addMessage(role, text) {
     hideEmpty();
     const div = document.createElement('div');
@@ -587,7 +587,7 @@
     scrollBottom();
     return div;
   }
-
+ 
   function addThinking() {
     hideEmpty();
     const div = document.createElement('div');
@@ -603,7 +603,7 @@
     scrollBottom();
     return div;
   }
-
+ 
   function addConfirmCard(soql) {
     hideEmpty();
     const div = document.createElement('div');
@@ -626,15 +626,15 @@
     scrollBottom();
     return div;
   }
-
+ 
   function addResultsCard(records, total) {
     if (!records || records.length === 0) {
       addMessage('assistant', 'Query ran successfully but returned no records.');
       return;
     }
-
+ 
     const keys = Object.keys(records[0]).filter(k => k !== 'attributes');
-
+ 
     const headers = keys.map(k => `<th>${k}</th>`).join('');
     const rows = records.map(r => {
       const cells = keys.map(k => {
@@ -644,7 +644,7 @@
       }).join('');
       return `<tr>${cells}</tr>`;
     }).join('');
-
+ 
     const div = document.createElement('div');
     div.className = 'results-card';
     div.innerHTML = `
@@ -664,11 +664,11 @@
     `;
     chatArea.appendChild(div);
     scrollBottom();
-
+ 
     // Store for CSV download
     window.lastResults = { records, keys };
   }
-
+ 
   function downloadCSV() {
     if (!window.lastResults) return;
     const { records, keys } = window.lastResults;
@@ -691,27 +691,27 @@
     a.click();
     URL.revokeObjectURL(url);
   }
-
+ 
   async function sendRequest() {
     const text = userInput.value.trim();
     if (!text || sendBtn.disabled) return;
-
+ 
     userInput.value = '';
     autoResize(userInput);
     sendBtn.disabled = true;
-
+ 
     addMessage('user', text);
     const thinking = addThinking();
-
+ 
     try {
-      const res = await fetch('https://pulldata-production.up.railway.app/', {
+      const res = await fetch('https://pulldata-production.up.railway.app/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request: text })
       });
       const data = await res.json();
       thinking.remove();
-
+ 
       if (data.error) {
         addMessage('assistant', `Error: ${data.error}`);
       } else {
@@ -722,33 +722,33 @@
       thinking.remove();
       addMessage('assistant', 'Could not reach the server. Make sure app.py is running.');
     }
-
+ 
     sendBtn.disabled = false;
     userInput.focus();
   }
-
+ 
   async function confirmQuery() {
     if (!pendingSOQL) return;
     const soql = pendingSOQL;
     pendingSOQL = null;
-
+ 
     // Disable buttons
     if (pendingConfirmCard) {
       pendingConfirmCard.querySelectorAll('button').forEach(b => b.disabled = true);
     }
-
+ 
     const thinking = addThinking();
     thinking.querySelector('.thinking').lastChild.textContent = ' Running query...';
-
+ 
     try {
-      const res = await fetch('https://pulldata-production.up.railway.app/', {
+      const res = await fetch('https://pulldata-production.up.railway.app/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ soql })
       });
       const data = await res.json();
       thinking.remove();
-
+ 
       if (data.error) {
         addMessage('assistant', `Salesforce error: ${data.error}`);
       } else {
@@ -759,7 +759,7 @@
       addMessage('assistant', 'Could not reach the server.');
     }
   }
-
+ 
   function cancelQuery(btn) {
     btn.closest('.message').remove();
     pendingSOQL = null;
