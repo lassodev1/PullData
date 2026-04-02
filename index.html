@@ -706,7 +706,10 @@
     try {
       const res = await fetch('https://pulldata-production.up.railway.app/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer pd_kLOblOhAy19_arAOUZFCbrFMeXLymg3pXb0syFdjbng'
+        },
         body: JSON.stringify({ request: text })
       });
       const data = await res.json();
@@ -743,7 +746,10 @@
     try {
       const res = await fetch('https://pulldata-production.up.railway.app/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer pd_kLOblOhAy19_arAOUZFCbrFMeXLymg3pXb0syFdjbng'
+        },
         body: JSON.stringify({ soql })
       });
       const data = await res.json();
