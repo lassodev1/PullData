@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from simple_salesforce import Salesforce
 from dotenv import load_dotenv
+import bcrypt
+from models import get_db_session, ApiKey
+from functools import wraps
 import anthropic
 import requests
 import os
@@ -10,6 +13,32 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing API key'}), 401
+        
+        raw_key = auth_header.split('Bearer ')[1].strip()
+        
+        db = get_db_session()
+        api_keys = db.query(ApiKey).filter_by(active=True).all()
+        
+        valid = False
+        for key in api_keys:
+            if bcrypt.checkpw(raw_key.encode(), key.key_hash.encode()):
+                valid = True
+                break
+        
+        db.close()
+        
+        if not valid:
+            return jsonify({'error': 'Invalid API key'}), 401
+            
+        return f(*args, **kwargs)
+    return decorated
 
 @app.after_request
 def add_cors_headers(response):
@@ -70,6 +99,7 @@ Rules:
     return message.content[0].text.strip()
 
 @app.route('/ask', methods=['POST'])
+@require_api_key
 def ask():
     data = request.json
     user_request = data.get('request')
@@ -85,6 +115,7 @@ def ask():
     })
 
 @app.route('/confirm', methods=['POST'])
+@require_api_key
 def confirm():
     data = request.json
     soql = data.get('soql')
