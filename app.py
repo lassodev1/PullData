@@ -4,6 +4,7 @@ from simple_salesforce import Salesforce
 from dotenv import load_dotenv
 import bcrypt
 from models import get_db_session, ApiKey
+from models import get_db_session, ApiKey, Organization, decrypt
 from functools import wraps
 import anthropic
 import requests
@@ -56,13 +57,13 @@ def handle_options():
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
         return response
 
-def get_salesforce_connection():
+def get_salesforce_connection(sf_domain, sf_client_id, sf_client_secret):
     response = requests.post(
-        'https://orgfarm-cde7fad80c-dev-ed.develop.my.salesforce.com/services/oauth2/token',
+        f'https://{sf_domain}/services/oauth2/token',
         data={
             'grant_type': 'client_credentials',
-            'client_id': os.getenv('SF_CLIENT_ID'),
-            'client_secret': os.getenv('SF_CLIENT_SECRET')
+            'client_id': sf_client_id,
+            'client_secret': sf_client_secret
         }
     )
     token_data = response.json()
@@ -123,7 +124,29 @@ def confirm():
     if not soql:
         return jsonify({'error': 'No SOQL query provided'}), 400
 
-    sf = get_salesforce_connection()
+    auth_header = request.headers.get('Authorization', '')
+    raw_key = auth_header.split('Bearer ')[1].strip()
+
+    db = get_db_session()
+    api_keys = db.query(ApiKey).filter_by(active=True).all()
+
+    org = None
+    for key in api_keys:
+        if bcrypt.checkpw(raw_key.encode(), key.key_hash.encode()):
+            org = db.query(Organization).filter_by(id=key.org_id).first()
+            break
+
+    db.close()
+
+    if not org:
+        return jsonify({'error': 'Org not found'}), 404
+
+    sf = get_salesforce_connection(
+        org.sf_domain,
+        decrypt(org.sf_client_id_encrypted),
+        decrypt(org.sf_client_secret_encrypted)
+    )
+
     result = sf.query(soql)
     return jsonify({
         'records': result['records'],
@@ -137,3 +160,28 @@ def health():
 if __name__ == '__main__':
     import os
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 3000)))
+
+@app.route('/org-config', methods=['GET'])
+@require_api_key
+def org_config():
+    auth_header = request.headers.get('Authorization', '')
+    raw_key = auth_header.split('Bearer ')[1].strip()
+
+    db = get_db_session()
+    api_keys = db.query(ApiKey).filter_by(active=True).all()
+
+    org = None
+    for key in api_keys:
+        if bcrypt.checkpw(raw_key.encode(), key.key_hash.encode()):
+            org = db.query(Organization).filter_by(id=key.org_id).first()
+            break
+
+    db.close()
+
+    if not org:
+        return jsonify({'error': 'Org not found'}), 404
+
+    return jsonify({
+        'org_name': org.name,
+        'sf_domain': org.sf_domain
+    })
