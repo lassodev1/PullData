@@ -832,7 +832,7 @@ checkAuth();
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${currentApiKey}`
         },
-        body: JSON.stringify({ soql })
+        body: JSON.stringify({ soql })90
       });
       const data = await res.json();
       thinking.remove();
