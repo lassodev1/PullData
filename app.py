@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from functools import wraps
 from datetime import datetime, timedelta
 from models import (
-    get_db_session, ApiKey, Organization, User,
+    get_db_session, ApiKey, Organization, User, ChatSession, Message,
     decrypt, hash_password, check_password
 )
 import bcrypt
@@ -13,21 +13,21 @@ import jwt
 import anthropic
 import requests
 import os
- 
+
 load_dotenv()
- 
+
 app = Flask(__name__)
 CORS(app)
- 
+
 # --- CORS headers ---
- 
+
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     return response
- 
+
 @app.before_request
 def handle_options():
     if request.method == 'OPTIONS':
@@ -36,9 +36,9 @@ def handle_options():
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
         return response
- 
+
 # --- Auth helpers ---
- 
+
 def generate_token(user_id, org_id):
     payload = {
         'user_id': user_id,
@@ -46,17 +46,17 @@ def generate_token(user_id, org_id):
         'exp': datetime.utcnow() + timedelta(days=30)
     }
     return jwt.encode(payload, os.getenv('JWT_SECRET'), algorithm='HS256')
- 
+
 def decode_token(token):
     return jwt.decode(token, os.getenv('JWT_SECRET'), algorithms=['HS256'])
- 
+
 def get_org_from_request():
     auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
         return None, None
- 
+
     token = auth_header.split('Bearer ')[1].strip()
- 
+
     # Try JWT first
     try:
         payload = decode_token(token)
@@ -67,7 +67,7 @@ def get_org_from_request():
         return org, user_id
     except jwt.InvalidTokenError:
         pass
- 
+
     # Fall back to API key
     db = get_db_session()
     api_keys = db.query(ApiKey).filter_by(active=True).all()
@@ -78,23 +78,23 @@ def get_org_from_request():
             break
     db.close()
     return org, None
- 
+
 def require_api_key(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get('Authorization', '')
         if not auth_header.startswith('Bearer '):
             return jsonify({'error': 'Missing API key'}), 401
- 
+
         token = auth_header.split('Bearer ')[1].strip()
- 
+
         # Accept JWT tokens
         try:
             decode_token(token)
             return f(*args, **kwargs)
         except jwt.InvalidTokenError:
             pass
- 
+
         # Accept API keys
         db = get_db_session()
         api_keys = db.query(ApiKey).filter_by(active=True).all()
@@ -104,15 +104,15 @@ def require_api_key(f):
                 valid = True
                 break
         db.close()
- 
+
         if not valid:
             return jsonify({'error': 'Invalid API key'}), 401
- 
+
         return f(*args, **kwargs)
     return decorated
- 
+
 # --- Salesforce helpers ---
- 
+
 def get_salesforce_connection(sf_domain, sf_client_id, sf_client_secret):
     response = requests.post(
         f'https://{sf_domain}/services/oauth2/token',
@@ -127,21 +127,21 @@ def get_salesforce_connection(sf_domain, sf_client_id, sf_client_secret):
         instance_url=token_data['instance_url'],
         session_id=token_data['access_token']
     )
- 
+
 def natural_language_to_soql(user_request):
     client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
     message = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=1024,
         system="""You are a Salesforce SOQL expert. Your job is to convert natural language requests into valid SOQL queries.
- 
+
 The Salesforce org has these standard objects available:
 - Contact (fields: Id, Name, FirstName, LastName, Email, Phone, Title, AccountId)
 - Account (fields: Id, Name, Type, Industry, Phone, BillingCity, BillingState)
 - Opportunity (fields: Id, Name, Amount, StageName, CloseDate, AccountId, OwnerId)
 - Campaign (fields: Id, Name, Status, StartDate, EndDate, Type)
 - CampaignMember (fields: Id, ContactId, CampaignId, Status)
- 
+
 Rules:
 - Return ONLY the SOQL query, nothing else
 - No explanations, no markdown, no backticks
@@ -152,13 +152,13 @@ Rules:
         ]
     )
     return message.content[0].text.strip()
- 
+
 # --- Routes ---
- 
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'ok'})
- 
+
 @app.route('/org-config', methods=['GET'])
 @require_api_key
 def org_config():
@@ -169,29 +169,29 @@ def org_config():
         'org_name': org.name,
         'sf_domain': org.sf_domain
     })
- 
+
 @app.route('/register', methods=['POST'])
 @require_api_key
 def register():
     data = request.json
     email = data.get('email', '').lower().strip()
     password = data.get('password', '')
- 
+
     if not email or not password:
         return jsonify({'error': 'Email and password required'}), 400
     if len(password) < 8:
         return jsonify({'error': 'Password must be at least 8 characters'}), 400
- 
+
     org, _ = get_org_from_request()
     if not org:
         return jsonify({'error': 'Invalid API key'}), 401
- 
+
     db = get_db_session()
     existing = db.query(User).filter_by(email=email).first()
     if existing:
         db.close()
         return jsonify({'error': 'An account with that email already exists'}), 400
- 
+
     user = User(
         org_id=org.id,
         email=email,
@@ -200,82 +200,187 @@ def register():
     )
     db.add(user)
     db.commit()
- 
+
     token = generate_token(user.id, org.id)
     db.close()
- 
+
     return jsonify({
         'token': token,
         'email': email,
         'org_name': org.name
     })
- 
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
     email = data.get('email', '').lower().strip()
     password = data.get('password', '')
- 
+
     if not email or not password:
         return jsonify({'error': 'Email and password required'}), 400
- 
+
     db = get_db_session()
     user = db.query(User).filter_by(email=email).first()
- 
+
     if not user or not check_password(password, user.password_hash):
         db.close()
         return jsonify({'error': 'Invalid email or password'}), 401
- 
+
     org = db.query(Organization).filter_by(id=user.org_id).first()
     token = generate_token(user.id, org.id)
     db.close()
- 
+
     return jsonify({
         'token': token,
         'email': email,
         'org_name': org.name
     })
- 
+
+# --- Session routes ---
+
+@app.route('/sessions', methods=['GET'])
+@require_api_key
+def list_sessions():
+    _, user_id = get_org_from_request()
+    if not user_id:
+        return jsonify({'sessions': []})  # API key auth — no user context
+
+    db = get_db_session()
+    sessions = (
+        db.query(ChatSession)
+        .filter_by(user_id=user_id)
+        .order_by(ChatSession.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    result = [
+        {
+            'id': s.id,
+            'title': s.title,
+            'created_at': s.created_at.isoformat()
+        }
+        for s in sessions
+    ]
+    db.close()
+    return jsonify({'sessions': result})
+
+@app.route('/sessions/<session_id>/messages', methods=['GET'])
+@require_api_key
+def get_session_messages(session_id):
+    _, user_id = get_org_from_request()
+    if not user_id:
+        return jsonify({'error': 'Login required'}), 401
+
+    db = get_db_session()
+    session = db.query(ChatSession).filter_by(id=session_id, user_id=user_id).first()
+    if not session:
+        db.close()
+        return jsonify({'error': 'Session not found'}), 404
+
+    messages = (
+        db.query(Message)
+        .filter_by(session_id=session_id)
+        .order_by(Message.created_at.asc())
+        .all()
+    )
+    result = [
+        {
+            'id': m.id,
+            'role': m.role,
+            'content': m.content,
+            'soql': m.soql,
+            'created_at': m.created_at.isoformat()
+        }
+        for m in messages
+    ]
+    db.close()
+    return jsonify({'messages': result})
+
+# --- Ask / Confirm (updated for history) ---
+
 @app.route('/ask', methods=['POST'])
 @require_api_key
 def ask():
     data = request.json
     user_request = data.get('request')
- 
+    session_id = data.get('session_id')  # optional — null means start new session
+
     if not user_request:
         return jsonify({'error': 'No request provided'}), 400
- 
+
+    _, user_id = get_org_from_request()
     soql = natural_language_to_soql(user_request)
+
+    # Save to DB if we have a logged-in user
+    if user_id:
+        db = get_db_session()
+
+        # Create session if none provided
+        if not session_id:
+            title = user_request[:50] + ('…' if len(user_request) > 50 else '')
+            session = ChatSession(user_id=user_id, title=title)
+            db.add(session)
+            db.commit()
+            session_id = session.id
+
+        # Save user message
+        db.add(Message(session_id=session_id, role='user', content=user_request))
+
+        # Save assistant response with SOQL attached
+        db.add(Message(
+            session_id=session_id,
+            role='assistant',
+            content="Here's the query I'll run — does this look right?",
+            soql=soql
+        ))
+
+        db.commit()
+        db.close()
+
     return jsonify({
         'soql': soql,
+        'session_id': session_id,
         'message': "Here's the query I'll run — does this look right?",
     })
- 
+
 @app.route('/confirm', methods=['POST'])
 @require_api_key
 def confirm():
     data = request.json
     soql = data.get('soql')
- 
+    session_id = data.get('session_id')
+
     if not soql:
         return jsonify({'error': 'No SOQL query provided'}), 400
- 
+
     org, user_id = get_org_from_request()
     if not org:
         return jsonify({'error': 'Org not found'}), 404
- 
+
     sf = get_salesforce_connection(
         org.sf_domain,
         decrypt(org.sf_client_id_encrypted),
         decrypt(org.sf_client_secret_encrypted)
     )
- 
+
     result = sf.query(soql)
+    total = result['totalSize']
+
+    # Save result summary to DB
+    if user_id and session_id:
+        db = get_db_session()
+        db.add(Message(
+            session_id=session_id,
+            role='assistant',
+            content=f"Returned {total} record{'s' if total != 1 else ''}."
+        ))
+        db.commit()
+        db.close()
+
     return jsonify({
         'records': result['records'],
-        'total': result['totalSize']
+        'total': total
     })
- 
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 3000)))
- 
