@@ -488,6 +488,36 @@
   </style>
 </head>
 <body>
+
+<!-- Onboarding overlay -->
+<div id="onboardingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0f0f11; z-index:1000; display:flex; align-items:center; justify-content:center;">
+    <div style="width:100%; max-width:420px; padding:24px;">
+      <div style="margin-bottom:32px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+          <div style="width:28px; height:28px; background:#6af0a8; border-radius:6px;"></div>
+          <span style="font-family:'DM Mono',monospace; font-size:15px; color:#e8e8ea;">Pull<span style="color:#6af0a8;">Data</span></span>
+        </div>
+        <div style="font-size:12px; color:#7a7a85; font-family:'DM Mono',monospace;">Enter your API key to continue</div>
+      </div>
+  
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <input
+          id="apiKeyInput"
+          type="password"
+          placeholder="pd_..."
+          style="background:#18181c; border:1px solid #2e2e36; border-radius:8px; padding:12px 16px; color:#e8e8ea; font-family:'DM Mono',monospace; font-size:13px; outline:none; width:100%;"
+          onkeydown="if(event.key==='Enter') submitApiKey()"
+        />
+        <button
+          onclick="submitApiKey()"
+          style="background:#6af0a8; color:#0f0f11; border:none; border-radius:8px; padding:12px; font-family:'DM Mono',monospace; font-size:13px; font-weight:500; cursor:pointer; width:100%;"
+        >
+          Connect
+        </button>
+        <div id="onboardingError" style="color:#ff6b6b; font-size:12px; font-family:'DM Mono',monospace; display:none; text-align:center;"></div>
+      </div>
+    </div>
+  </div>
  
 <header>
   <div class="logo">
@@ -540,13 +570,65 @@
 </div>
  
 <script>
+
+
+
   const chatArea = document.getElementById('chatArea');
   const emptyState = document.getElementById('emptyState');
   const userInput = document.getElementById('userInput');
   const sendBtn = document.getElementById('sendBtn');
+  const STORAGE_KEY = 'pulldata_api_key';
  
   let pendingSOQL = null;
   let pendingConfirmCard = null;
+  let currentApiKey = null;
+
+  function checkAuth() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    currentApiKey = stored;
+    document.getElementById('onboardingOverlay').style.display = 'none';
+  } else {
+    document.getElementById('onboardingOverlay').style.display = 'flex';
+  }
+}
+
+async function submitApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+
+  const errorEl = document.getElementById('onboardingError');
+  errorEl.style.display = 'none';
+
+  try {
+    const res = await fetch('https://pulldata-production.up.railway.app/org-config', {
+      headers: { 'Authorization': `Bearer ${key}` }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem(STORAGE_KEY, key);
+      currentApiKey = key;
+      document.getElementById('onboardingOverlay').style.display = 'none';
+      document.querySelector('.status').innerHTML = `<div class="status-dot"></div>${data.org_name} connected`;
+    } else {
+      errorEl.textContent = 'Invalid API key. Please try again.';
+      errorEl.style.display = 'block';
+    }
+  } catch (err) {
+    errorEl.textContent = 'Could not reach server.';
+    errorEl.style.display = 'block';
+  }
+}
+
+function logout() {
+  localStorage.removeItem(STORAGE_KEY);
+  currentApiKey = null;
+  document.getElementById('onboardingOverlay').style.display = 'flex';
+}
+
+// Run on page load
+checkAuth();
  
   function autoResize(el) {
     el.style.height = 'auto';
@@ -708,7 +790,7 @@
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer pd_kLOblOhAy19_arAOUZFCbrFMeXLymg3pXb0syFdjbng'
+            'Authorization': `Bearer ${currentApiKey}`
         },
         body: JSON.stringify({ request: text })
       });
@@ -748,7 +830,7 @@
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer pd_kLOblOhAy19_arAOUZFCbrFMeXLymg3pXb0syFdjbng'
+            'Authorization': `Bearer ${currentApiKey}`
         },
         body: JSON.stringify({ soql })
       });
