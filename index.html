@@ -1,621 +1,748 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>askLasso</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    /* ─── Design Tokens ─────────────────────────────── */
     :root {
-      --bg: #0f0f11; --surface: #18181c; --surface2: #212126; --border: #2e2e36;
-      --accent: #6af0a8; --accent-dim: rgba(106,240,168,0.12); --accent-dim2: rgba(106,240,168,0.06);
-      --text: #e8e8ea; --text-muted: #7a7a85; --text-dim: #4a4a55;
-      --red: #ff6b6b; --red-dim: rgba(255,107,107,0.1);
-      --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+      --orange:       #E5622A;
+      --orange-light: #F07B4A;
+      --orange-pale:  #FEF0EA;
+      --orange-mid:   #FDDDD0;
+      --black:        #0D0D0D;
+      --gray-900:     #1A1A1A;
+      --gray-700:     #3D3D3D;
+      --gray-500:     #767676;
+      --gray-400:     #A0A0A0;
+      --gray-300:     #C4C4C4;
+      --gray-200:     #E8E8E8;
+      --gray-100:     #F4F4F4;
+      --gray-50:      #F9F9F9;
+      --white:        #FFFFFF;
+      --red:          #DC2626;
+      --red-pale:     #FEF2F2;
+      --red-border:   #FECACA;
+      --sidebar-w:    260px;
+      --radius-sm:    8px;
+      --radius-md:    12px;
+      --radius-lg:    16px;
+      --radius-xl:    24px;
+      --shadow-lg:    0 12px 32px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.05);
+      --font:         'Sora', sans-serif;
+      --mono:         'DM Mono', monospace;
+      --t:            150ms cubic-bezier(.4,0,.2,1);
     }
 
+    /* ─── Reset ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
-
     body {
-      background: var(--bg); color: var(--text); font-family: var(--sans);
-      font-size: 14px; line-height: 1.6; display: flex; flex-direction: column;
-      height: 100vh; overflow: hidden;
+      font-family: var(--font);
+      background: var(--white);
+      color: var(--black);
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
     }
 
-    /* Header */
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 24px; height: 52px; border-bottom: 1px solid var(--border);
-      flex-shrink: 0; background: var(--surface); z-index: 10;
+    /* ─── Onboarding Overlay ─────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: var(--gray-50);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .auth-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeUp .3s ease both;
+    }
+    .auth-logo {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 36px;
+    }
+    .auth-logo-bars { display: flex; flex-direction: column; gap: 3px; }
+    .auth-logo-bars span {
+      display: block; height: 4px; border-radius: 2px; background: var(--orange);
+    }
+    .auth-logo-bars span:nth-child(1) { width: 20px; }
+    .auth-logo-bars span:nth-child(2) { width: 15px; opacity: .7; }
+    .auth-logo-bars span:nth-child(3) { width: 10px; opacity: .45; }
+    .auth-logo-text { font-size: 20px; font-weight: 600; letter-spacing: -.4px; }
+    .auth-logo-text em { font-style: normal; color: var(--orange); }
+
+    /* Onboarding screens */
+    .ob-screen { display: none; flex-direction: column; gap: 0; }
+    .ob-screen.active { display: flex; }
+
+    .ob-heading { font-size: 22px; font-weight: 600; letter-spacing: -.4px; margin-bottom: 6px; }
+    .ob-sub { font-size: 14px; color: var(--gray-500); line-height: 1.55; margin-bottom: 28px; }
+    .ob-org-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--orange-pale); border: 1px solid var(--orange-mid);
+      border-radius: var(--radius-sm); padding: 10px 14px;
+      font-size: 13px; font-weight: 500; color: var(--orange); margin-bottom: 20px;
+    }
+    .ob-org-badge::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--orange); flex-shrink: 0;
     }
 
-    .logo { display: flex; align-items: center; gap: 10px; }
-
-    .logo-mark {
-      width: 28px; height: 28px; background: var(--accent); border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--gray-700); margin-bottom: 6px; letter-spacing: -.1px;
     }
-
-    .logo-mark svg { width: 16px; height: 16px; }
-
-    .logo-text {
-      font-family: var(--mono); font-size: 15px; font-weight: 500;
-      letter-spacing: -0.02em; color: var(--text);
+    .field input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: 14px; color: var(--black);
+      background: var(--white); outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
     }
+    .field input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(229,98,42,.12); }
+    .field input::placeholder { color: var(--gray-300); }
 
-    .logo-text span { color: var(--accent); }
-
-    .header-right { display: flex; align-items: center; gap: 16px; }
-
-    .status {
-      display: flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 20px; border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: 14px; font-weight: 500;
+      cursor: pointer; border: none; transition: all var(--t); white-space: nowrap;
     }
+    .btn:disabled { opacity: .55; cursor: not-allowed; pointer-events: none; }
+    .btn-primary { background: var(--orange); color: var(--white); width: 100%; }
+    .btn-primary:hover { background: var(--orange-light); box-shadow: 0 4px 12px rgba(229,98,42,.28); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost { background: transparent; color: var(--gray-700); border: 1.5px solid var(--gray-200); width: 100%; }
+    .btn-ghost:hover { background: var(--gray-50); border-color: var(--gray-300); }
 
-    .status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent); animation: pulse 2s infinite;
+    .ob-divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--gray-300); font-size: 12px; margin: 14px 0;
     }
-
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-
-    .user-info { display: none; align-items: center; gap: 10px; }
-    .user-info.visible { display: flex; }
-    .user-email { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
-
-    .btn-logout {
-      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
-      background: transparent; border: 1px solid var(--border);
-      border-radius: 5px; padding: 3px 10px; cursor: pointer; transition: all 0.15s;
+    .ob-divider::before, .ob-divider::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+    .ob-toggle { margin-top: 16px; text-align: center; font-size: 13px; color: var(--gray-500); }
+    .ob-toggle a { color: var(--orange); font-weight: 500; cursor: pointer; text-decoration: none; }
+    .ob-toggle a:hover { text-decoration: underline; }
+    .ob-back {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 13px; color: var(--gray-400); cursor: pointer;
+      background: none; border: none; font-family: var(--font);
+      margin-bottom: 20px; padding: 0; transition: color var(--t);
     }
-    .btn-logout:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+    .ob-back:hover { color: var(--gray-700); }
+    .ob-error {
+      background: var(--red-pale); border: 1px solid var(--red-border);
+      color: var(--red); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none;
+    }
+    .ob-error.show { display: block; }
 
-    /* Main layout */
-    .app-body { display: flex; flex: 1; overflow: hidden; }
+    /* ─── App Shell ──────────────────────────────────── */
+    #app { display: none; height: 100vh; flex-direction: row; }
+    #app.visible { display: flex; }
 
-    /* Sidebar */
+    /* ─── Sidebar ────────────────────────────────────── */
     .sidebar {
-      width: 220px; flex-shrink: 0; background: var(--surface);
-      border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      height: 100vh; background: var(--gray-50);
+      border-right: 1px solid var(--gray-200);
+      display: flex; flex-direction: column; overflow: hidden;
     }
+    .sidebar-top { padding: 20px 16px 14px; border-bottom: 1px solid var(--gray-200); flex-shrink: 0; }
+    .sidebar-logo { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+    .sidebar-logo-bars { display: flex; flex-direction: column; gap: 2.5px; }
+    .sidebar-logo-bars span { display: block; height: 3.5px; border-radius: 2px; background: var(--orange); }
+    .sidebar-logo-bars span:nth-child(1) { width: 18px; }
+    .sidebar-logo-bars span:nth-child(2) { width: 13px; opacity: .7; }
+    .sidebar-logo-bars span:nth-child(3) { width: 9px; opacity: .45; }
+    .sidebar-logo-text { font-size: 15px; font-weight: 600; letter-spacing: -.3px; }
+    .sidebar-logo-text em { font-style: normal; color: var(--orange); }
 
-    .sidebar-header { padding: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-
-    .btn-new-session {
-      width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-      background: var(--accent-dim2); border: 1px solid rgba(106,240,168,0.15);
-      border-radius: 8px; color: var(--accent); font-family: var(--mono); font-size: 11px;
-      cursor: pointer; transition: all 0.15s;
+    .new-chat-btn {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 9px 12px; border-radius: var(--radius-sm);
+      background: var(--white); border: 1.5px solid var(--gray-200);
+      font-family: var(--font); font-size: 13px; font-weight: 500;
+      color: var(--gray-700); cursor: pointer; transition: all var(--t);
     }
-    .btn-new-session:hover { background: var(--accent-dim); border-color: rgba(106,240,168,0.3); }
-    .btn-new-session svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .new-chat-btn:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-pale); }
 
-    .session-list { flex: 1; overflow-y: auto; padding: 8px; }
-    .session-list::-webkit-scrollbar { width: 3px; }
-    .session-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .sidebar-section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--gray-400); padding: 14px 16px 6px;
+    }
+    .session-list { flex: 1; overflow-y: auto; padding: 0 8px 16px; }
+    .session-list::-webkit-scrollbar { width: 4px; }
+    .session-list::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 4px; }
 
     .session-item {
-      padding: 8px 10px; border-radius: 7px; cursor: pointer;
-      transition: background 0.12s; margin-bottom: 2px;
+      padding: 9px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; margin-bottom: 2px; transition: background var(--t);
     }
-    .session-item:hover  { background: var(--surface2); }
-    .session-item.active { background: var(--accent-dim2); }
-
+    .session-item:hover { background: var(--gray-200); }
+    .session-item.active { background: var(--orange-pale); }
     .session-item-title {
-      font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+      font-size: 13px; color: var(--gray-700);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;
     }
-    .session-item.active .session-item-title { color: var(--accent); }
+    .session-item.active .session-item-title { color: var(--orange); font-weight: 500; }
+    .session-item-date { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .sidebar-empty { padding: 16px 10px; font-size: 13px; color: var(--gray-300); font-style: italic; line-height: 1.5; }
 
-    .session-item-date { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 2px; }
-
-    .sidebar-empty {
-      padding: 20px 12px; font-family: var(--mono); font-size: 11px;
-      color: var(--text-dim); text-align: center; line-height: 1.6;
+    .sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--gray-200); position: relative; flex-shrink: 0; }
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: background var(--t);
     }
-
-    /* Chat column */
-    .chat-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
-    /* Chat area */
-    .chat-area {
-      flex: 1; overflow-y: auto; padding: 24px;
-      display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth;
+    .user-pill:hover { background: var(--gray-200); }
+    .user-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--orange-pale); border: 1.5px solid var(--orange-mid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; color: var(--orange); flex-shrink: 0;
     }
-    .chat-area::-webkit-scrollbar { width: 4px; }
-    .chat-area::-webkit-scrollbar-track { background: transparent; }
-    .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .user-info-wrap { flex: 1; min-width: 0; }
+    .user-name { font-size: 13px; font-weight: 500; color: var(--black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-org  { font-size: 11px; color: var(--gray-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-menu {
+      position: absolute; bottom: 64px; left: 12px; right: 12px;
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+      padding: 6px; display: none; z-index: 100; animation: fadeIn .15s ease;
+    }
+    .user-menu.show { display: block; }
+    .menu-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: var(--radius-sm); font-size: 13px; color: var(--gray-700);
+      cursor: pointer; transition: background var(--t);
+    }
+    .menu-item:hover { background: var(--gray-100); }
+    .menu-item.danger { color: var(--red); }
+    .menu-item.danger:hover { background: var(--red-pale); }
+
+    /* ─── Chat Main ──────────────────────────────────── */
+    .chat-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--white); }
+    .chat-header {
+      padding: 16px 28px; border-bottom: 1px solid var(--gray-200);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--white); flex-shrink: 0;
+    }
+    .chat-header-title { font-size: 15px; font-weight: 600; color: var(--black); letter-spacing: -.2px; }
+    .chat-header-sub { font-size: 12px; color: var(--gray-500); margin-top: 1px; }
+    .header-badge {
+      display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px;
+      background: var(--orange-pale); border: 1px solid var(--orange-mid);
+      font-size: 12px; font-weight: 500; color: var(--orange);
+    }
+    .header-badge::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--orange); animation: pulse 2.5s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+    /* ─── Messages ───────────────────────────────────── */
+    .messages-wrap { flex: 1; overflow-y: auto; padding: 32px 0 16px; scroll-behavior: smooth; }
+    .messages-wrap::-webkit-scrollbar { width: 4px; }
+    .messages-wrap::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 4px; }
+    .messages-inner { max-width: 720px; margin: 0 auto; padding: 0 28px; }
 
     /* Empty state */
     .empty-state {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 12px; color: var(--text-dim); text-align: center; padding: 40px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 80px 24px; text-align: center;
     }
-    .empty-state .big-text { font-family: var(--mono); font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
-
-    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
-
-    .suggestion {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-      padding: 6px 14px; font-size: 12px; color: var(--text-muted);
-      cursor: pointer; transition: all 0.15s; font-family: var(--mono);
+    .empty-icon {
+      width: 52px; height: 52px; border-radius: var(--radius-md);
+      background: var(--orange-pale); border: 1.5px solid var(--orange-mid);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
     }
-    .suggestion:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim2); }
-
-    /* Messages */
-    .message { display: flex; flex-direction: column; gap: 4px; animation: fadeUp 0.2s ease; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .empty-title { font-size: 20px; font-weight: 600; letter-spacing: -.4px; margin-bottom: 8px; }
+    .empty-sub { font-size: 14px; color: var(--gray-500); line-height: 1.6; max-width: 360px; margin-bottom: 28px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 520px; }
+    .chip {
+      padding: 8px 16px; border-radius: 100px;
+      border: 1.5px solid var(--gray-200); background: var(--white);
+      font-family: var(--font); font-size: 13px; color: var(--gray-700);
+      cursor: pointer; transition: all var(--t); white-space: nowrap;
     }
+    .chip:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-pale); }
 
-    .message.user      { align-items: flex-end; }
-    .message.assistant { align-items: flex-start; }
+    /* Message rows */
+    .msg { display: flex; gap: 12px; margin-bottom: 24px; animation: fadeUp .22s ease both; }
+    .msg-av {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .msg-av.lasso { background: var(--orange-pale); border: 1.5px solid var(--orange-mid); }
+    .msg-av.user  { background: var(--gray-100);    border: 1.5px solid var(--gray-200); }
+    .msg-body { flex: 1; min-width: 0; }
+    .msg-sender {
+      font-size: 11px; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; margin-bottom: 6px; color: var(--gray-400);
+    }
+    .msg.lasso .msg-sender { color: var(--orange); }
+    .msg-text { font-size: 14.5px; line-height: 1.65; color: var(--gray-900); }
 
-    .message-label {
-      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
-      letter-spacing: 0.05em; text-transform: uppercase; padding: 0 4px;
+    /* Query confirmation card */
+    .query-card {
+      background: var(--gray-50); border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-md); overflow: hidden; margin-top: 10px;
     }
-
-    .bubble { max-width: 680px; padding: 12px 16px; border-radius: 12px; line-height: 1.6; }
-
-    .message.user .bubble {
-      background: var(--accent-dim); border: 1px solid rgba(106,240,168,0.2);
-      border-bottom-right-radius: 4px; color: var(--text);
+    .query-card-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 16px; border-bottom: 1px solid var(--gray-200);
+      font-size: 12px; color: var(--gray-500);
     }
-    .message.assistant .bubble {
-      background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px;
-    }
-
-    /* Confirm card */
-    .confirm-card {
-      max-width: 680px; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden; animation: fadeUp 0.2s ease;
-    }
-
-    .confirm-card-header {
-      padding: 12px 16px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted);
-    }
-    .confirm-card-header span {
-      font-family: var(--mono); font-size: 10px; background: var(--accent-dim); color: var(--accent);
-      padding: 2px 8px; border-radius: 4px; letter-spacing: 0.05em;
-    }
-
-    .query-block {
-      padding: 14px 16px; font-family: var(--mono); font-size: 12px; color: var(--accent);
-      background: var(--accent-dim2); white-space: pre-wrap; word-break: break-all;
-      line-height: 1.8; border-bottom: 1px solid var(--border);
-    }
-
-    .confirm-actions { padding: 12px 16px; display: flex; gap: 8px; }
-
-    /* Past query card - read-only */
-    .past-query-card {
-      max-width: 680px; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden; opacity: 0.75;
-    }
-    .past-query-card .query-block { border-bottom: none; }
-
-    /* Buttons */
-    .btn {
-      padding: 7px 16px; border-radius: 7px; font-size: 12px; font-family: var(--mono);
-      cursor: pointer; border: none; transition: all 0.15s; font-weight: 500;
-    }
-    .btn-confirm { background: var(--accent); color: #0f0f11; }
-    .btn-confirm:hover { background: #8ff7be; }
-    .btn-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
-    .btn-cancel:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
-
-    /* Results table */
-    .results-card {
-      max-width: 100%; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden; animation: fadeUp 0.2s ease;
-    }
-    .results-header {
-      padding: 12px 16px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .results-header-left { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
-    .results-count {
-      font-family: var(--mono); font-size: 10px; background: var(--accent-dim); color: var(--accent);
+    .soql-tag {
+      background: var(--orange-pale); color: var(--orange);
       padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-family: var(--mono); font-weight: 500;
     }
-    .btn-download {
-      padding: 5px 12px; border-radius: 6px; font-size: 11px; font-family: var(--mono);
-      cursor: pointer; background: transparent; color: var(--accent);
-      border: 1px solid rgba(106,240,168,0.3); transition: all 0.15s;
+    .query-code {
+      padding: 14px 16px; font-family: var(--mono); font-size: 13px;
+      line-height: 1.75; color: var(--gray-900); white-space: pre-wrap;
+      word-break: break-all; border-bottom: 1px solid var(--gray-200);
     }
-    .btn-download:hover { background: var(--accent-dim); }
+    .query-actions { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--white); }
+    .btn-run {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 18px; border-radius: var(--radius-sm);
+      background: var(--orange); color: var(--white);
+      font-family: var(--font); font-size: 13px; font-weight: 500;
+      border: none; cursor: pointer; transition: all var(--t);
+    }
+    .btn-run:hover { background: var(--orange-light); box-shadow: 0 4px 12px rgba(229,98,42,.25); }
+    .btn-run:disabled { background: var(--gray-200); cursor: not-allowed; box-shadow: none; }
+    .btn-cancel-q {
+      display: inline-flex; align-items: center; padding: 8px 16px;
+      border-radius: var(--radius-sm); background: transparent; color: var(--gray-500);
+      border: 1.5px solid var(--gray-200); font-family: var(--font); font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: all var(--t);
+    }
+    .btn-cancel-q:hover { border-color: var(--red); color: var(--red); background: var(--red-pale); }
 
+    /* Past query card */
+    .query-card.past { opacity: .7; }
+    .query-card.past .query-code { border-bottom: none; }
+
+    /* Results card */
+    .results-card {
+      background: var(--white); border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-md); overflow: hidden; margin-top: 10px;
+    }
+    .results-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 16px; border-bottom: 1px solid var(--gray-200);
+    }
+    .results-meta { font-size: 13px; font-weight: 500; color: var(--gray-700); }
+    .results-count {
+      display: inline-flex; align-items: center;
+      background: var(--orange-pale); color: var(--orange);
+      border-radius: 100px; padding: 2px 10px;
+      font-size: 12px; font-weight: 600; margin-left: 8px;
+    }
+    .btn-csv {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: var(--radius-sm);
+      background: var(--gray-50); border: 1.5px solid var(--gray-200);
+      font-family: var(--font); font-size: 12px; font-weight: 500;
+      color: var(--gray-700); cursor: pointer; transition: all var(--t);
+    }
+    .btn-csv:hover { background: var(--orange-pale); border-color: var(--orange); color: var(--orange); }
     .table-wrap { overflow-x: auto; max-height: 320px; overflow-y: auto; }
     .table-wrap::-webkit-scrollbar { height: 4px; width: 4px; }
-    .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
-
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th {
-      padding: 8px 14px; text-align: left; font-size: 10px; font-weight: 500;
-      letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim);
-      background: var(--surface2); border-bottom: 1px solid var(--border);
+      background: var(--gray-50); padding: 9px 14px; text-align: left;
+      font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--gray-500); border-bottom: 1px solid var(--gray-200);
       white-space: nowrap; position: sticky; top: 0;
     }
     td {
-      padding: 8px 14px; color: var(--text-muted);
-      border-bottom: 1px solid rgba(46,46,54,0.5);
-      white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+      padding: 10px 14px; color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-200);
+      white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis;
     }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--surface2); color: var(--text); }
-    td.null-val { color: var(--text-dim); font-style: italic; }
+    tr:hover td { background: var(--gray-50); color: var(--black); }
+    td.null-val { color: var(--gray-300); font-style: italic; }
 
     /* Thinking indicator */
-    .thinking {
-      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-      border-bottom-left-radius: 4px; font-size: 12px; color: var(--text-muted);
-      font-family: var(--mono); max-width: 300px;
-    }
-    .thinking-dots { display: flex; gap: 3px; }
+    .thinking-row { display: flex; align-items: center; gap: 10px; color: var(--gray-500); font-size: 13.5px; padding: 2px 0; }
+    .thinking-dots { display: flex; gap: 4px; }
     .thinking-dots span {
-      width: 4px; height: 4px; border-radius: 50%; background: var(--accent); animation: blink 1.2s infinite;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--orange); animation: bounce 1.2s infinite;
     }
-    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+    .thinking-dots span:nth-child(2) { animation-delay: .15s; }
+    .thinking-dots span:nth-child(3) { animation-delay: .3s; }
 
-    @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
-
-    /* Input area */
-    .input-area { padding: 16px 24px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
-
-    .input-row {
-      display: flex; gap: 10px; align-items: flex-end; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: 12px; padding: 10px 10px 10px 16px;
-      transition: border-color 0.15s;
+    /* ─── Input Area ─────────────────────────────────── */
+    .input-area { padding: 14px 28px 22px; flex-shrink: 0; }
+    .input-wrap { max-width: 720px; margin: 0 auto; }
+    .input-box {
+      display: flex; align-items: flex-end; gap: 10px;
+      background: var(--white); border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-lg); padding: 11px 12px;
+      transition: border-color var(--t), box-shadow var(--t);
     }
-    .input-row:focus-within { border-color: rgba(106,240,168,0.4); }
-
-    textarea {
-      flex: 1; background: transparent; border: none; outline: none; resize: none;
-      color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.5;
-      max-height: 120px; min-height: 22px;
+    .input-box:focus-within { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(229,98,42,.10); }
+    .input-box textarea {
+      flex: 1; border: none; outline: none; font-family: var(--font);
+      font-size: 14.5px; line-height: 1.55; color: var(--black);
+      background: transparent; resize: none; max-height: 160px;
     }
-    textarea::placeholder { color: var(--text-dim); }
-
+    .input-box textarea::placeholder { color: var(--gray-300); }
     .send-btn {
-      width: 34px; height: 34px; border-radius: 8px; background: var(--accent);
-      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: all 0.15s;
+      width: 34px; height: 34px; border-radius: var(--radius-sm);
+      background: var(--orange); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all var(--t);
     }
-    .send-btn:hover { background: #8ff7be; }
-    .send-btn:disabled { background: var(--border); cursor: not-allowed; }
-    .send-btn svg { width: 16px; height: 16px; }
+    .send-btn:hover { background: var(--orange-light); transform: scale(1.06); }
+    .send-btn:active { transform: scale(.97); }
+    .send-btn:disabled { background: var(--gray-200); cursor: not-allowed; transform: none; }
+    .input-hint { margin-top: 8px; text-align: center; font-size: 11.5px; color: var(--gray-300); }
 
-    .input-hint { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 8px; padding: 0 4px; }
-
-    /* Onboarding overlay */
-    .onboarding-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: #0f0f11; z-index: 1000; display: flex; align-items: center; justify-content: center;
-    }
-    .onboarding-box { width: 100%; max-width: 400px; padding: 24px; }
-    .onboarding-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-    .onboarding-logo-mark { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; }
-    .onboarding-logo-text { font-family: var(--mono); font-size: 15px; color: var(--text); }
-    .onboarding-logo-text span { color: var(--accent); }
-    .onboarding-subtitle { font-size: 12px; color: var(--text-muted); font-family: var(--mono); margin-bottom: 28px; }
-
-    .onboarding-screen { display: none; flex-direction: column; gap: 12px; }
-    .onboarding-screen.active { display: flex; }
-
-    .ob-input {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-      padding: 12px 16px; color: var(--text); font-family: var(--mono); font-size: 13px;
-      outline: none; width: 100%; transition: border-color 0.15s;
-    }
-    .ob-input:focus { border-color: rgba(106,240,168,0.4); }
-    .ob-input::placeholder { color: var(--text-dim); }
-
-    .ob-btn-primary {
-      background: var(--accent); color: #0f0f11; border: none; border-radius: 8px; padding: 12px;
-      font-family: var(--mono); font-size: 13px; font-weight: 500; cursor: pointer; width: 100%; transition: background 0.15s;
-    }
-    .ob-btn-primary:hover { background: #8ff7be; }
-    .ob-btn-primary:disabled { background: var(--border); cursor: not-allowed; color: var(--text-dim); }
-
-    .ob-error { color: var(--red); font-size: 12px; font-family: var(--mono); display: none; text-align: center; }
-
-    .ob-toggle { text-align: center; font-size: 12px; font-family: var(--mono); color: var(--text-dim); }
-    .ob-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
-    .ob-toggle a:hover { text-decoration: underline; }
-
-    .ob-back {
-      display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px;
-      color: var(--text-dim); cursor: pointer; background: none; border: none; padding: 0;
-      margin-bottom: 4px; transition: color 0.15s;
-    }
-    .ob-back:hover { color: var(--text-muted); }
-
-    .ob-org-badge {
-      display: flex; align-items: center; gap: 8px; background: var(--accent-dim2);
-      border: 1px solid rgba(106,240,168,0.15); border-radius: 8px; padding: 10px 14px;
-      font-family: var(--mono); font-size: 12px; color: var(--accent); margin-bottom: 4px;
-    }
-    .ob-org-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-    .ob-screen-title { font-family: var(--mono); font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+    /* ─── Animations ─────────────────────────────────── */
+    @keyframes fadeUp  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+    @keyframes bounce  { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-6px); } }
   </style>
 </head>
 <body>
 
-<!-- Onboarding overlay -->
-<div id="onboardingOverlay" class="onboarding-overlay" style="display:none;">
-  <div class="onboarding-box">
-    <div class="onboarding-logo">
-      <div class="onboarding-logo-mark"></div>
-      <span class="onboarding-logo-text">ask<span>Lasso</span></span>
+<!-- ─── Onboarding Overlay ─────────────────────────── -->
+<div id="onboardingOverlay" class="overlay" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-bars"><span></span><span></span><span></span></div>
+      <span class="auth-logo-text">Ask<em>Lasso</em></span>
     </div>
-    <div class="onboarding-subtitle" id="onboardingSubtitle">Enter your institution API key to continue</div>
 
     <!-- Screen 1: API Key -->
-    <div class="onboarding-screen active" id="screenApiKey">
-      <input id="apiKeyInput" type="password" placeholder="pd_..." class="ob-input"
-        onkeydown="if(event.key==='Enter') submitApiKey()" />
-      <button class="ob-btn-primary" onclick="submitApiKey()">Continue</button>
+    <div class="ob-screen active" id="screenApiKey">
+      <h2 class="ob-heading">Enter your API key</h2>
+      <p class="ob-sub">Your institution's API key provides access to askLasso. Contact your administrator if you don't have one.</p>
       <div id="apiKeyError" class="ob-error"></div>
+      <div class="field">
+        <label>Institution API Key</label>
+        <input id="apiKeyInput" type="password" placeholder="pd_••••••••••••••••"
+          autocomplete="off" onkeydown="if(event.key==='Enter') submitApiKey()" />
+      </div>
+      <button class="btn btn-primary" onclick="submitApiKey()">Continue</button>
     </div>
 
     <!-- Screen 2: Login / Register -->
-    <div class="onboarding-screen" id="screenAuth">
+    <div class="ob-screen" id="screenAuth">
       <button class="ob-back" onclick="goBack()">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M8 2L4 6L8 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M8 2L4 6.5L8 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         Back
       </button>
-      <div class="ob-org-badge">
-        <div class="ob-org-badge-dot"></div>
-        <span id="orgBadgeName">Loading...</span>
-      </div>
+      <div class="ob-org-badge" id="orgBadgeName">Loading…</div>
 
+      <!-- Login -->
       <div id="loginForm">
-        <div class="ob-screen-title">Sign in to your account</div>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <input id="loginEmail" type="email" placeholder="Email" class="ob-input"
+        <h2 class="ob-heading">Welcome back</h2>
+        <p class="ob-sub">Sign in to your account.</p>
+        <div id="loginError" class="ob-error"></div>
+        <div class="field">
+          <label>Email</label>
+          <input id="loginEmail" type="email" placeholder="you@college.edu"
             onkeydown="if(event.key==='Enter') submitLogin()" />
-          <input id="loginPassword" type="password" placeholder="Password" class="ob-input"
-            onkeydown="if(event.key==='Enter') submitLogin()" />
-          <button class="ob-btn-primary" id="loginBtn" onclick="submitLogin()">Sign in</button>
-          <div id="loginError" class="ob-error"></div>
-          <div class="ob-toggle">No account? <a onclick="showRegister()">Create one</a></div>
         </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="loginPassword" type="password" placeholder="••••••••"
+            onkeydown="if(event.key==='Enter') submitLogin()" />
+        </div>
+        <button class="btn btn-primary" id="loginBtn" onclick="submitLogin()">Sign in</button>
+        <div class="ob-divider">or</div>
+        <button class="btn btn-ghost" onclick="showRegister()">Create account</button>
       </div>
 
+      <!-- Register -->
       <div id="registerForm" style="display:none;">
-        <div class="ob-screen-title">Create your account</div>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <input id="registerEmail" type="email" placeholder="Email" class="ob-input"
+        <h2 class="ob-heading">Create account</h2>
+        <p class="ob-sub">Set up your personal askLasso account.</p>
+        <div id="registerError" class="ob-error"></div>
+        <div class="field">
+          <label>Email</label>
+          <input id="registerEmail" type="email" placeholder="you@college.edu"
             onkeydown="if(event.key==='Enter') submitRegister()" />
-          <input id="registerPassword" type="password" placeholder="Password (min 8 characters)" class="ob-input"
-            onkeydown="if(event.key==='Enter') submitRegister()" />
-          <button class="ob-btn-primary" id="registerBtn" onclick="submitRegister()">Create account</button>
-          <div id="registerError" class="ob-error"></div>
-          <div class="ob-toggle">Already have an account? <a onclick="showLogin()">Sign in</a></div>
         </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="registerPassword" type="password" placeholder="Min. 8 characters"
+            onkeydown="if(event.key==='Enter') submitRegister()" />
+        </div>
+        <button class="btn btn-primary" id="registerBtn" onclick="submitRegister()">Create account</button>
+        <div class="ob-toggle">Already have an account? <a onclick="showLogin()">Sign in</a></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- App shell -->
-<header>
-  <div class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="5" height="5" rx="1" fill="#0f0f11"/>
-        <rect x="9" y="2" width="5" height="5" rx="1" fill="#0f0f11"/>
-        <rect x="2" y="9" width="5" height="5" rx="1" fill="#0f0f11"/>
-        <rect x="9" y="9" width="5" height="5" rx="1" fill="#0f0f11" opacity="0.4"/>
-      </svg>
-    </div>
-    <div class="logo-text">ask<span>Lasso</span></div>
-  </div>
-  <div class="header-right">
-    <div class="status">
-      <div class="status-dot"></div>
-      <span id="statusText">Salesforce connected</span>
-    </div>
-    <div class="user-info" id="userInfo">
-      <span class="user-email" id="userEmailDisplay"></span>
-      <button class="btn-logout" onclick="logout()">Log out</button>
-    </div>
-  </div>
-</header>
-
-<div class="app-body">
-
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <button class="btn-new-session" onclick="startNewSession()">
-        <svg viewBox="0 0 12 12" fill="none">
-          <path d="M6 2V10M2 6H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+<!-- ─── App Shell ──────────────────────────────────── -->
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-bars"><span></span><span></span><span></span></div>
+        <span class="sidebar-logo-text">Ask<em>Lasso</em></span>
+      </div>
+      <button class="new-chat-btn" onclick="startNewSession()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
         </svg>
         New session
       </button>
     </div>
+    <div class="sidebar-section-label">Recent</div>
     <div class="session-list" id="sessionList">
-      <div class="sidebar-empty">Your sessions<br>will appear here</div>
+      <div class="sidebar-empty">Your sessions will appear here</div>
     </div>
-  </div>
+    <div class="sidebar-footer">
+      <div class="user-pill" onclick="toggleUserMenu()">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-info-wrap">
+          <div class="user-name" id="userEmailDisplay">–</div>
+          <div class="user-org" id="orgNameDisplay">–</div>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="color:var(--gray-400);flex-shrink:0;">
+          <path d="M3 5l3.5 3.5L10 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="user-menu" id="userMenu">
+        <div class="menu-item danger" onclick="logout()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M5 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3M9 10l3-3-3-3M12 7H5"
+              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Sign out
+        </div>
+      </div>
+    </div>
+  </aside>
 
-  <div class="chat-column">
-    <div class="chat-area" id="chatArea">
-      <div class="empty-state" id="emptyState">
-        <div class="big-text">Ask anything about your Salesforce data</div>
-        <div style="font-size:12px; color: var(--text-dim);">I'll write the query, you confirm it, then download your report.</div>
-        <div class="suggestions">
-          <div class="suggestion" onclick="useSuggestion(this)">All contacts with email</div>
-          <div class="suggestion" onclick="useSuggestion(this)">Open opportunities over $10k</div>
-          <div class="suggestion" onclick="useSuggestion(this)">Accounts in California</div>
-          <div class="suggestion" onclick="useSuggestion(this)">Contacts without a phone number</div>
-          <div class="suggestion" onclick="useSuggestion(this)">All campaigns this year</div>
+  <!-- Chat Main -->
+  <main class="chat-main">
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-title" id="chatHeaderTitle">New session</div>
+        <div class="chat-header-sub">Salesforce · Natural language search</div>
+      </div>
+      <div class="header-badge" id="statusBadge">Connected</div>
+    </div>
+
+    <div class="messages-wrap" id="messagesWrap">
+      <div class="messages-inner" id="messagesInner">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+                stroke="var(--orange)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2 class="empty-title">Ask your Salesforce anything</h2>
+          <p class="empty-sub">Describe the data you need in plain English — I'll write the query, you confirm it, then download your report.</p>
+          <div class="chips">
+            <button class="chip" onclick="useChip(this)">All contacts with email</button>
+            <button class="chip" onclick="useChip(this)">Open opportunities over $10k</button>
+            <button class="chip" onclick="useChip(this)">Accounts in California</button>
+            <button class="chip" onclick="useChip(this)">Contacts without a phone number</button>
+            <button class="chip" onclick="useChip(this)">All campaigns this year</button>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="input-area">
-      <div class="input-row">
-        <textarea id="userInput" placeholder="Describe the report you need..." rows="1"
-          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-        <button class="send-btn" id="sendBtn" onclick="sendRequest()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M8 13V3M8 3L4 7M8 3L12 7" stroke="#0f0f11" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
+      <div class="input-wrap">
+        <div class="input-box">
+          <textarea id="userInput" rows="1"
+            placeholder="Describe the report you need..."
+            onkeydown="handleKey(event)"
+            oninput="autoResize(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendRequest()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 13V3M3 8l5-5 5 5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
       </div>
-      <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
     </div>
-  </div>
-
+  </main>
 </div>
 
 <script>
+  // ─── Config ────────────────────────────────────────
   const API       = 'https://pulldata-production.up.railway.app';
   const JWT_KEY   = 'asklasso_jwt';
   const EMAIL_KEY = 'asklasso_email';
   const ORG_KEY   = 'asklasso_org';
 
-  const chatArea   = document.getElementById('chatArea');
-  const emptyState = document.getElementById('emptyState');
-  const userInput  = document.getElementById('userInput');
-  const sendBtn    = document.getElementById('sendBtn');
+  // ─── State ─────────────────────────────────────────
+  let currentToken     = null;
+  let tempApiKey       = null;
+  let currentSessionId = null;
+  let pendingSOQL      = null;
+  let pendingConfCard  = null;
 
-  let pendingSOQL        = null;
-  let pendingConfirmCard = null;
-  let currentToken       = null;
-  let tempApiKey         = null;
-  let currentSessionId   = null;
+  // ─── Init ───────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', checkAuth);
 
-  // Auth init
   function checkAuth() {
     const jwt   = localStorage.getItem(JWT_KEY);
     const email = localStorage.getItem(EMAIL_KEY);
     const org   = localStorage.getItem(ORG_KEY);
     if (jwt) {
       currentToken = jwt;
-      document.getElementById('onboardingOverlay').style.display = 'none';
-      setLoggedInHeader(email, org);
+      showApp(email, org);
       loadSessions();
     } else {
       showOverlay();
     }
   }
 
+  // ─── Overlay helpers ─────────────────────────────────
   function showOverlay() {
     document.getElementById('onboardingOverlay').style.display = 'flex';
-    showScreen('screenApiKey');
-    document.getElementById('onboardingSubtitle').textContent = 'Enter your institution API key to continue';
+    document.getElementById('app').classList.remove('visible');
+    showOBScreen('screenApiKey');
   }
 
-  function showScreen(id) {
-    document.querySelectorAll('.onboarding-screen').forEach(s => s.classList.remove('active'));
+  function showApp(email, org) {
+    document.getElementById('onboardingOverlay').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('userEmailDisplay').textContent = email || '–';
+    document.getElementById('userAvatar').textContent = (email || '?')[0].toUpperCase();
+    document.getElementById('orgNameDisplay').textContent = org || '–';
+    if (org) document.getElementById('statusBadge').textContent = org + ' connected';
+  }
+
+  function showOBScreen(id) {
+    document.querySelectorAll('.ob-screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
   }
 
   function goBack() {
     tempApiKey = null;
-    showScreen('screenApiKey');
-    document.getElementById('onboardingSubtitle').textContent = 'Enter your institution API key to continue';
     document.getElementById('apiKeyInput').value = '';
+    clearOBErrors();
+    showOBScreen('screenApiKey');
   }
 
   function showLogin() {
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('registerForm').style.display = 'none';
-    document.getElementById('loginError').style.display = 'none';
-    document.getElementById('onboardingSubtitle').textContent = 'Sign in to continue';
+    clearOBErrors();
   }
 
   function showRegister() {
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('registerForm').style.display = 'block';
-    document.getElementById('registerError').style.display = 'none';
-    document.getElementById('onboardingSubtitle').textContent = 'Create your account';
+    clearOBErrors();
   }
 
-  // Screen 1: API key
+  function clearOBErrors() {
+    ['apiKeyError','loginError','registerError'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '';
+      el.classList.remove('show');
+    });
+  }
+
+  function showOBError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  // ─── API Key ─────────────────────────────────────────
   async function submitApiKey() {
     const key = document.getElementById('apiKeyInput').value.trim();
     if (!key) return;
-    const errorEl = document.getElementById('apiKeyError');
-    errorEl.style.display = 'none';
+    clearOBErrors();
     try {
       const res = await fetch(`${API}/org-config`, { headers: { 'Authorization': `Bearer ${key}` } });
       if (res.ok) {
         const data = await res.json();
         tempApiKey = key;
         document.getElementById('orgBadgeName').textContent = data.org_name;
-        document.getElementById('onboardingSubtitle').textContent = 'Sign in to continue';
-        showScreen('screenAuth');
+        showOBScreen('screenAuth');
         showLogin();
       } else {
-        errorEl.textContent = 'Invalid API key. Please try again.';
-        errorEl.style.display = 'block';
+        showOBError('apiKeyError', 'Invalid API key. Please try again.');
       }
-    } catch (err) {
-      errorEl.textContent = 'Could not reach server.';
-      errorEl.style.display = 'block';
+    } catch {
+      showOBError('apiKeyError', 'Could not reach server. Check your connection.');
     }
   }
 
-  // Screen 2: Login
+  // ─── Login ───────────────────────────────────────────
   async function submitLogin() {
     const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errorEl = document.getElementById('loginError');
+    const pass  = document.getElementById('loginPassword').value;
+    if (!email || !pass) return;
+    clearOBErrors();
     const btn = document.getElementById('loginBtn');
-    if (!email || !password) return;
-    errorEl.style.display = 'none';
-    btn.disabled = true;
-    btn.textContent = 'Signing in...';
+    btn.disabled = true; btn.textContent = 'Signing in…';
     try {
       const res = await fetch(`${API}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password: pass })
       });
       const data = await res.json();
-      if (res.ok) { completeLogin(data.token, data.email, data.org_name); }
-      else { errorEl.textContent = data.error || 'Login failed.'; errorEl.style.display = 'block'; }
-    } catch (err) { errorEl.textContent = 'Could not reach server.'; errorEl.style.display = 'block'; }
-    btn.disabled = false;
-    btn.textContent = 'Sign in';
+      if (res.ok) completeLogin(data.token, data.email, data.org_name);
+      else showOBError('loginError', data.error || 'Login failed.');
+    } catch {
+      showOBError('loginError', 'Could not reach server.');
+    }
+    btn.disabled = false; btn.textContent = 'Sign in';
   }
 
-  // Screen 2: Register
+  // ─── Register ────────────────────────────────────────
   async function submitRegister() {
     const email = document.getElementById('registerEmail').value.trim();
-    const password = document.getElementById('registerPassword').value;
-    const errorEl = document.getElementById('registerError');
+    const pass  = document.getElementById('registerPassword').value;
+    if (!email || !pass) return;
+    clearOBErrors();
     const btn = document.getElementById('registerBtn');
-    if (!email || !password) return;
-    errorEl.style.display = 'none';
-    btn.disabled = true;
-    btn.textContent = 'Creating account...';
+    btn.disabled = true; btn.textContent = 'Creating account…';
     try {
       const res = await fetch(`${API}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tempApiKey}` },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password: pass })
       });
       const data = await res.json();
-      if (res.ok) { completeLogin(data.token, data.email, data.org_name); }
-      else { errorEl.textContent = data.error || 'Registration failed.'; errorEl.style.display = 'block'; }
-    } catch (err) { errorEl.textContent = 'Could not reach server.'; errorEl.style.display = 'block'; }
-    btn.disabled = false;
-    btn.textContent = 'Create account';
+      if (res.ok) completeLogin(data.token, data.email, data.org_name);
+      else showOBError('registerError', data.error || 'Registration failed.');
+    } catch {
+      showOBError('registerError', 'Could not reach server.');
+    }
+    btn.disabled = false; btn.textContent = 'Create account';
   }
 
   function completeLogin(token, email, orgName) {
@@ -624,54 +751,50 @@
     localStorage.setItem(ORG_KEY, orgName);
     currentToken = token;
     tempApiKey = null;
-    document.getElementById('onboardingOverlay').style.display = 'none';
-    setLoggedInHeader(email, orgName);
+    showApp(email, orgName);
     loadSessions();
   }
 
-  function setLoggedInHeader(email, orgName) {
-    if (orgName) document.getElementById('statusText').textContent = `${orgName} connected`;
-    if (email) {
-      document.getElementById('userEmailDisplay').textContent = email;
-      document.getElementById('userInfo').classList.add('visible');
-    }
-  }
-
+  // ─── Logout ──────────────────────────────────────────
   function logout() {
-    localStorage.removeItem(JWT_KEY);
-    localStorage.removeItem(EMAIL_KEY);
-    localStorage.removeItem(ORG_KEY);
-    currentToken = null;
-    currentSessionId = null;
-    document.getElementById('userInfo').classList.remove('visible');
-    document.getElementById('userEmailDisplay').textContent = '';
-    document.getElementById('sessionList').innerHTML = '<div class="sidebar-empty">Your sessions<br>will appear here</div>';
+    [JWT_KEY, EMAIL_KEY, ORG_KEY].forEach(k => localStorage.removeItem(k));
+    currentToken = null; currentSessionId = null;
+    document.getElementById('sessionList').innerHTML = '<div class="sidebar-empty">Your sessions will appear here</div>';
     clearChat();
     showOverlay();
+    document.getElementById('userMenu').classList.remove('show');
   }
 
-  // Session sidebar
+  // ─── User Menu ───────────────────────────────────────
+  function toggleUserMenu() {
+    document.getElementById('userMenu').classList.toggle('show');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.sidebar-footer'))
+      document.getElementById('userMenu').classList.remove('show');
+  });
+
+  // ─── Sessions ────────────────────────────────────────
   async function loadSessions() {
     try {
       const res = await fetch(`${API}/sessions`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
       const data = await res.json();
       renderSessions(data.sessions || []);
-    } catch (err) { /* non-critical */ }
+    } catch { /* non-critical */ }
   }
 
   function renderSessions(sessions) {
     const list = document.getElementById('sessionList');
     if (!sessions.length) {
-      list.innerHTML = '<div class="sidebar-empty">Your sessions<br>will appear here</div>';
+      list.innerHTML = '<div class="sidebar-empty">Your sessions will appear here</div>';
       return;
     }
     list.innerHTML = sessions.map(s => `
       <div class="session-item ${s.id === currentSessionId ? 'active' : ''}"
            id="session-${s.id}" onclick="loadSession('${s.id}')">
-        <div class="session-item-title">${escapeHtml(s.title)}</div>
+        <div class="session-item-title">${escHtml(s.title)}</div>
         <div class="session-item-date">${formatDate(s.created_at)}</div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 
   async function loadSession(sessionId) {
@@ -679,202 +802,215 @@
     const el = document.getElementById(`session-${sessionId}`);
     if (el) el.classList.add('active');
     currentSessionId = sessionId;
-    pendingSOQL = null;
-    pendingConfirmCard = null;
+    pendingSOQL = null; pendingConfCard = null;
     clearChat();
+    const titleEl = el ? el.querySelector('.session-item-title') : null;
+    document.getElementById('chatHeaderTitle').textContent = titleEl ? titleEl.textContent : 'Session';
     try {
       const res = await fetch(`${API}/sessions/${sessionId}/messages`, {
         headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       const data = await res.json();
       renderHistoryMessages(data.messages || []);
-    } catch (err) { addMessage('assistant', 'Could not load session history.'); }
+    } catch {
+      addMsg('lasso', 'Could not load session history.');
+    }
   }
 
   function renderHistoryMessages(messages) {
-    if (!messages.length) { emptyState.style.display = 'flex'; return; }
+    if (!messages.length) { showEmpty(); return; }
     messages.forEach(m => {
-      if (m.role === 'user') addMessage('user', escapeHtml(m.content));
+      if (m.role === 'user') addMsg('user', escHtml(m.content));
       else if (m.soql)      addPastQueryCard(m.soql, m.content);
-      else                  addMessage('assistant', escapeHtml(m.content));
+      else                  addMsg('lasso', escHtml(m.content));
     });
   }
 
   function startNewSession() {
     currentSessionId = null;
-    pendingSOQL = null;
-    pendingConfirmCard = null;
+    pendingSOQL = null; pendingConfCard = null;
     document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('chatHeaderTitle').textContent = 'New session';
     clearChat();
-    userInput.focus();
+    document.getElementById('userInput').focus();
   }
 
-  // Chat helpers
+  // ─── Chat helpers ────────────────────────────────────
   function clearChat() {
-    chatArea.innerHTML = '';
-    chatArea.appendChild(emptyState);
-    emptyState.style.display = 'flex';
+    const inner = document.getElementById('messagesInner');
+    inner.innerHTML = '';
+    inner.appendChild(buildEmptyState());
     window.lastResults = null;
   }
 
-  function autoResize(el) {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  function buildEmptyState() {
+    const div = document.createElement('div');
+    div.className = 'empty-state'; div.id = 'emptyState';
+    div.innerHTML = `
+      <div class="empty-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+            stroke="var(--orange)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="empty-title">Ask your Salesforce anything</h2>
+      <p class="empty-sub">Describe the data you need in plain English — I'll write the query, you confirm it, then download your report.</p>
+      <div class="chips">
+        <button class="chip" onclick="useChip(this)">All contacts with email</button>
+        <button class="chip" onclick="useChip(this)">Open opportunities over $10k</button>
+        <button class="chip" onclick="useChip(this)">Accounts in California</button>
+        <button class="chip" onclick="useChip(this)">Contacts without a phone number</button>
+        <button class="chip" onclick="useChip(this)">All campaigns this year</button>
+      </div>`;
+    return div;
   }
 
-  function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRequest(); }
-  }
+  function showEmpty() { const es = document.getElementById('emptyState'); if (es) es.style.display = 'flex'; }
+  function hideEmpty() { const es = document.getElementById('emptyState'); if (es) es.style.display = 'none'; }
+  function scrollBottom() { const w = document.getElementById('messagesWrap'); w.scrollTop = w.scrollHeight; }
 
-  function useSuggestion(el) {
-    userInput.value = el.textContent;
-    autoResize(userInput);
-    userInput.focus();
+  function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; }
+  function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRequest(); } }
+  function useChip(btn) {
+    document.getElementById('userInput').value = btn.textContent.trim();
+    autoResize(document.getElementById('userInput'));
     sendRequest();
   }
 
-  function hideEmpty()    { emptyState.style.display = 'none'; }
-  function scrollBottom() { chatArea.scrollTop = chatArea.scrollHeight; }
+  // ─── Message builders ────────────────────────────────
+  const lassoAv = `<div class="msg-av lasso"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M13 9.5a1.5 1.5 0 01-1.5 1.5H4L1 14V2.5A1.5 1.5 0 012.5 1h9A1.5 1.5 0 0113 2.5z" stroke="var(--orange)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+  const userAv  = `<div class="msg-av user"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4.5" r="2.5" stroke="var(--gray-400)" stroke-width="1.4"/><path d="M1 12c0-3.038 2.462-5.5 5.5-5.5S12 8.962 12 12" stroke="var(--gray-400)" stroke-width="1.4" stroke-linecap="round"/></svg></div>`;
 
-  function addMessage(role, text) {
+  function addMsg(role, html) {
     hideEmpty();
+    const inner = document.getElementById('messagesInner');
+    const isL = role === 'lasso';
     const div = document.createElement('div');
-    div.className = `message ${role}`;
-    div.innerHTML = `
-      <div class="message-label">${role === 'user' ? 'You' : 'askLasso'}</div>
-      <div class="bubble">${text}</div>
-    `;
-    chatArea.appendChild(div);
+    div.className = `msg ${isL ? 'lasso' : 'user'}`;
+    div.innerHTML = `${isL ? lassoAv : userAv}
+      <div class="msg-body">
+        <div class="msg-sender">${isL ? 'askLasso' : 'You'}</div>
+        <div class="msg-text">${html}</div>
+      </div>`;
+    inner.appendChild(div);
     scrollBottom();
     return div;
   }
 
-  function addThinking() {
+  function addThinking(label) {
     hideEmpty();
+    const inner = document.getElementById('messagesInner');
     const div = document.createElement('div');
-    div.className = 'message assistant';
-    div.innerHTML = `
-      <div class="message-label">askLasso</div>
-      <div class="thinking">
-        <div class="thinking-dots"><span></span><span></span><span></span></div>
-        Generating query...
-      </div>
-    `;
-    chatArea.appendChild(div);
+    div.className = 'msg lasso'; div.id = 'thinkingMsg';
+    div.innerHTML = `${lassoAv}
+      <div class="msg-body">
+        <div class="msg-sender">askLasso</div>
+        <div class="thinking-row">
+          <div class="thinking-dots"><span></span><span></span><span></span></div>
+          <span>${label || 'Generating query…'}</span>
+        </div>
+      </div>`;
+    inner.appendChild(div);
     scrollBottom();
     return div;
   }
+
+  function removeThinking() { const el = document.getElementById('thinkingMsg'); if (el) el.remove(); }
 
   function addConfirmCard(soql) {
     hideEmpty();
-    const div = document.createElement('div');
-    div.className = 'message assistant';
-    div.innerHTML = `
-      <div class="message-label">askLasso</div>
-      <div class="confirm-card">
-        <div class="confirm-card-header">
-          <span>SOQL QUERY</span>
-          Here's what I'll run — does this look right?
+    const inner = document.getElementById('messagesInner');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg lasso';
+    wrapper.innerHTML = `${lassoAv}
+      <div class="msg-body">
+        <div class="msg-sender">askLasso</div>
+        <div class="msg-text" style="margin-bottom:10px;">Here's what I'll run — does this look right?</div>
+        <div class="query-card">
+          <div class="query-card-head"><span class="soql-tag">SOQL</span> Query</div>
+          <div class="query-code">${escHtml(soql)}</div>
+          <div class="query-actions" id="confirmActions">
+            <button class="btn-run" onclick="confirmQuery()">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 1.5l8.5 4.5L2 10.5z" fill="white" stroke="white" stroke-width=".4" stroke-linejoin="round"/></svg>
+              Run this query
+            </button>
+            <button class="btn-cancel-q" onclick="cancelQuery(this)">Cancel</button>
+          </div>
         </div>
-        <div class="query-block">${escapeHtml(soql)}</div>
-        <div class="confirm-actions">
-          <button class="btn btn-confirm" onclick="confirmQuery()">Run this query</button>
-          <button class="btn btn-cancel" onclick="cancelQuery(this)">Cancel</button>
-        </div>
-      </div>
-    `;
-    chatArea.appendChild(div);
+      </div>`;
+    inner.appendChild(wrapper);
     scrollBottom();
-    return div;
+    return wrapper;
   }
 
   function addPastQueryCard(soql, label) {
     hideEmpty();
-    const div = document.createElement('div');
-    div.className = 'message assistant';
-    div.innerHTML = `
-      <div class="message-label">askLasso</div>
-      <div class="past-query-card">
-        <div class="confirm-card-header">
-          <span>SOQL QUERY</span>
-          ${escapeHtml(label)}
+    const inner = document.getElementById('messagesInner');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg lasso';
+    wrapper.innerHTML = `${lassoAv}
+      <div class="msg-body">
+        <div class="msg-sender">askLasso</div>
+        <div class="msg-text" style="margin-bottom:10px;">${escHtml(label)}</div>
+        <div class="query-card past">
+          <div class="query-card-head"><span class="soql-tag">SOQL</span> Query</div>
+          <div class="query-code">${escHtml(soql)}</div>
         </div>
-        <div class="query-block">${escapeHtml(soql)}</div>
-      </div>
-    `;
-    chatArea.appendChild(div);
+      </div>`;
+    inner.appendChild(wrapper);
     scrollBottom();
   }
 
   function addResultsCard(records, total) {
     if (!records || records.length === 0) {
-      addMessage('assistant', 'Query ran successfully but returned no records.');
+      addMsg('lasso', 'Query ran successfully but returned no records.');
       return;
     }
     const keys = Object.keys(records[0]).filter(k => k !== 'attributes');
-    const headers = keys.map(k => `<th>${k}</th>`).join('');
-    const rows = records.map(r => {
-      const cells = keys.map(k => {
-        const val = r[k];
-        if (val === null || val === undefined) return `<td class="null-val">—</td>`;
-        return `<td title="${val}">${val}</td>`;
-      }).join('');
-      return `<tr>${cells}</tr>`;
-    }).join('');
-    const div = document.createElement('div');
-    div.className = 'results-card';
-    div.innerHTML = `
-      <div class="results-header">
-        <div class="results-header-left">
-          <span class="results-count">${total} record${total !== 1 ? 's' : ''}</span>
-          Results
+    const inner = document.getElementById('messagesInner');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg lasso';
+    const thead = keys.map(k => `<th>${escHtml(k)}</th>`).join('');
+    const tbody = records.map(r =>
+      `<tr>${keys.map(k => {
+        const v = r[k];
+        return (v === null || v === undefined)
+          ? `<td class="null-val">—</td>`
+          : `<td title="${escHtml(String(v))}">${escHtml(String(v))}</td>`;
+      }).join('')}</tr>`
+    ).join('');
+    wrapper.innerHTML = `${lassoAv}
+      <div class="msg-body" style="flex:1;min-width:0;">
+        <div class="msg-sender">askLasso</div>
+        <div class="results-card">
+          <div class="results-head">
+            <div class="results-meta">Results <span class="results-count">${total} record${total !== 1 ? 's' : ''}</span></div>
+            <button class="btn-csv" onclick="downloadCSV()">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v7M3 5l3 3 3-3M1 10h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>Download CSV
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
+          </div>
         </div>
-        <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>${headers}</tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    `;
-    chatArea.appendChild(div);
+      </div>`;
+    inner.appendChild(wrapper);
     scrollBottom();
     window.lastResults = { records, keys };
   }
 
-  function downloadCSV() {
-    if (!window.lastResults) return;
-    const { records, keys } = window.lastResults;
-    const header = keys.join(',');
-    const rows = records.map(r =>
-      keys.map(k => {
-        const val = r[k];
-        if (val === null || val === undefined) return '';
-        const str = String(val);
-        return str.includes(',') || str.includes('"') || str.includes('\n')
-          ? `"${str.replace(/"/g, '""')}"` : str;
-      }).join(',')
-    );
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `asklasso-export-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // API calls
+  // ─── API calls ───────────────────────────────────────
   async function sendRequest() {
-    const text = userInput.value.trim();
-    if (!text || sendBtn.disabled) return;
-    userInput.value = '';
-    autoResize(userInput);
-    sendBtn.disabled = true;
-    addMessage('user', escapeHtml(text));
-    const thinking = addThinking();
+    const input = document.getElementById('userInput');
+    const text  = input.value.trim();
+    if (!text || document.getElementById('sendBtn').disabled) return;
+    input.value = '';
+    autoResize(input);
+    document.getElementById('sendBtn').disabled = true;
+    addMsg('user', escHtml(text));
+    addThinking('Generating query…');
     try {
       const res = await fetch(`${API}/ask`, {
         method: 'POST',
@@ -882,33 +1018,37 @@
         body: JSON.stringify({ request: text, session_id: currentSessionId })
       });
       const data = await res.json();
-      thinking.remove();
+      removeThinking();
       if (data.error) {
-        addMessage('assistant', `Error: ${data.error}`);
+        addMsg('lasso', `Error: ${escHtml(data.error)}`);
       } else {
         if (data.session_id) {
           const isNew = !currentSessionId;
           currentSessionId = data.session_id;
-          if (isNew) loadSessions();
+          if (isNew) {
+            loadSessions();
+            document.getElementById('chatHeaderTitle').textContent =
+              text.length > 42 ? text.slice(0, 42) + '…' : text;
+          }
         }
         pendingSOQL = data.soql;
-        pendingConfirmCard = addConfirmCard(data.soql);
+        pendingConfCard = addConfirmCard(data.soql);
       }
-    } catch (err) {
-      thinking.remove();
-      addMessage('assistant', 'Could not reach the server. Please try again.');
+    } catch {
+      removeThinking();
+      addMsg('lasso', 'Could not reach the server. Please try again.');
     }
-    sendBtn.disabled = false;
-    userInput.focus();
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
   }
 
   async function confirmQuery() {
     if (!pendingSOQL) return;
     const soql = pendingSOQL;
     pendingSOQL = null;
-    if (pendingConfirmCard) pendingConfirmCard.querySelectorAll('button').forEach(b => b.disabled = true);
-    const thinking = addThinking();
-    thinking.querySelector('.thinking').lastChild.textContent = ' Running query...';
+    const actions = document.getElementById('confirmActions');
+    if (actions) actions.querySelectorAll('button').forEach(b => b.disabled = true);
+    addThinking('Running query…');
     try {
       const res = await fetch(`${API}/confirm`, {
         method: 'POST',
@@ -916,37 +1056,52 @@
         body: JSON.stringify({ soql, session_id: currentSessionId })
       });
       const data = await res.json();
-      thinking.remove();
-      if (data.error) addMessage('assistant', `Salesforce error: ${data.error}`);
+      removeThinking();
+      if (data.error) addMsg('lasso', `Salesforce error: ${escHtml(data.error)}`);
       else addResultsCard(data.records, data.total);
-    } catch (err) {
-      thinking.remove();
-      addMessage('assistant', 'Could not reach the server.');
+    } catch {
+      removeThinking();
+      addMsg('lasso', 'Could not reach the server.');
     }
   }
 
   function cancelQuery(btn) {
-    btn.closest('.message').remove();
+    btn.closest('.msg').remove();
     pendingSOQL = null;
-    addMessage('assistant', 'Cancelled. Ask me for a different report.');
+    addMsg('lasso', 'Cancelled. Feel free to ask for a different report.');
   }
 
-  // Utilities
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // ─── CSV ─────────────────────────────────────────────
+  function downloadCSV() {
+    if (!window.lastResults) return;
+    const { records, keys } = window.lastResults;
+    const esc = v => {
+      const s = String(v ?? '');
+      return (s.includes(',') || s.includes('"') || s.includes('\n'))
+        ? `"${s.replace(/"/g,'""')}"` : s;
+    };
+    const rows = [keys.join(','), ...records.map(r => keys.map(k => esc(r[k])).join(','))];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `asklasso-export-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── Utilities ───────────────────────────────────────
+  function escHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function formatDate(iso) {
     const d = new Date(iso), diff = Date.now() - d;
     if (diff < 60000)     return 'just now';
-    if (diff < 3600000)   return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000)  return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diff < 3600000)   return `${Math.floor(diff/60000)}m ago`;
+    if (diff < 86400000)  return `${Math.floor(diff/3600000)}h ago`;
+    if (diff < 604800000) return `${Math.floor(diff/86400000)}d ago`;
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
   }
-
-  checkAuth();
 </script>
 </body>
 </html>
