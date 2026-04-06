@@ -473,7 +473,21 @@
           <input id="loginPassword" type="password" placeholder="••••••••"
             onkeydown="if(event.key==='Enter') submitLogin()" />
         </div>
+        <div style="text-align:right;margin-top:-6px;margin-bottom:14px;">
+          <a onclick="showForgotPassword()" style="font-size:12px;color:var(--gray-400);cursor:pointer;text-decoration:none;"
+             onmouseover="this.style.color='var(--orange)'" onmouseout="this.style.color='var(--gray-400)'">
+            Forgot password?
+          </a>
+        </div>
         <button class="btn btn-primary" id="loginBtn" onclick="submitLogin()">Sign in</button>
+        <div class="ob-divider">or</div>
+        <button class="btn btn-ghost" id="sfOAuthBtn" onclick="loginWithSalesforce()" style="display:flex;align-items:center;gap:9px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6.5 3.5C6.5 2.12 7.62 1 9 1c1.05 0 1.96.63 2.37 1.54A3 3 0 0114 5.5c0 1.66-1.34 3-3 3H4.5A2.5 2.5 0 012 6a2.5 2.5 0 012.5-2.5c.17 0 .33.02.5.05" stroke="var(--gray-500)" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M5 10l-1.5 4M8 10v4M11 10l1.5 4" stroke="var(--gray-500)" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Continue with Salesforce
+        </button>
         <div class="ob-divider">or</div>
         <button class="btn btn-ghost" onclick="showRegister()">Create account</button>
       </div>
@@ -495,6 +509,30 @@
         </div>
         <button class="btn btn-primary" id="registerBtn" onclick="submitRegister()">Create account</button>
         <div class="ob-toggle">Already have an account? <a onclick="showLogin()">Sign in</a></div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Forgot Password -->
+    <div class="ob-screen" id="screenForgotPassword">
+      <button class="ob-back" onclick="showOBScreen('screenAuth'); showLogin()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M8 2L4 6.5L8 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back to sign in
+      </button>
+      <h2 class="ob-heading">Reset password</h2>
+      <p class="ob-sub">Enter your email and we'll send a reset link good for 1 hour.</p>
+      <div id="forgotError" class="ob-error"></div>
+      <div id="forgotSuccessMsg" style="display:none;background:var(--orange-pale);border:1px solid var(--orange-mid);color:var(--orange);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;line-height:1.55;margin-bottom:14px;">
+        ✓ If that email is in our system, a reset link is on its way. Check your inbox.
+      </div>
+      <div id="forgotFormFields">
+        <div class="field">
+          <label>Email</label>
+          <input id="forgotEmail" type="email" placeholder="you@college.edu"
+            onkeydown="if(event.key==='Enter') submitForgotPassword()" />
+        </div>
+        <button class="btn btn-primary" id="forgotBtn" onclick="submitForgotPassword()">Send reset link</button>
       </div>
     </div>
   </div>
@@ -665,11 +703,80 @@
   }
 
   function clearOBErrors() {
-    ['apiKeyError','loginError','registerError'].forEach(id => {
+    ['apiKeyError','loginError','registerError','forgotError'].forEach(id => {
       const el = document.getElementById(id);
-      el.textContent = '';
-      el.classList.remove('show');
+      if (el) { el.textContent = ''; el.classList.remove('show'); }
     });
+  }
+
+  function showForgotPassword() {
+    clearOBErrors();
+    document.getElementById('forgotEmail').value = '';
+    document.getElementById('forgotSuccessMsg').style.display = 'none';
+    document.getElementById('forgotFormFields').style.display = 'block';
+    const btn = document.getElementById('forgotBtn');
+    btn.disabled = false; btn.textContent = 'Send reset link';
+    showOBScreen('screenForgotPassword');
+  }
+
+  async function submitForgotPassword() {
+    const email = document.getElementById('forgotEmail').value.trim();
+    if (!email) return;
+    clearOBErrors();
+    const btn = document.getElementById('forgotBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      await fetch(`${API}/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      document.getElementById('forgotFormFields').style.display = 'none';
+      document.getElementById('forgotSuccessMsg').style.display = 'block';
+    } catch {
+      showOBError('forgotError', 'Could not reach server. Please try again.');
+      btn.disabled = false; btn.textContent = 'Send reset link';
+    }
+  }
+
+  // ─── Salesforce OAuth popup ──────────────────────────
+  async function loginWithSalesforce() {
+    if (!tempApiKey) return;
+    const btn = document.getElementById('sfOAuthBtn');
+    btn.disabled = true; btn.textContent = 'Opening Salesforce…';
+    try {
+      const res  = await fetch(`${API}/sf-oauth/start`, {
+        headers: { 'Authorization': `Bearer ${tempApiKey}` }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.auth_url) {
+        showOBError('loginError', data.error || 'Could not start Salesforce login.');
+        btn.disabled = false; btn.textContent = 'Continue with Salesforce';
+        return;
+      }
+      const popup = window.open(data.auth_url, 'sf_oauth',
+        'width=620,height=720,top=100,left=200,scrollbars=yes');
+      if (!popup) {
+        showOBError('loginError', 'Popup was blocked — please allow popups for this site and try again.');
+        btn.disabled = false; btn.textContent = 'Continue with Salesforce';
+        return;
+      }
+      function handleOAuthMsg(e) {
+        // Accept messages from the backend callback page
+        if (!e.data || !e.data.type) return;
+        window.removeEventListener('message', handleOAuthMsg);
+        if (e.data.type === 'SF_OAUTH_SUCCESS') {
+          completeLogin(e.data.token, e.data.email, e.data.org_name);
+        } else {
+          showOBError('loginError', e.data.error || 'Salesforce login failed.');
+          btn.disabled = false; btn.textContent = 'Continue with Salesforce';
+        }
+      }
+      window.addEventListener('message', handleOAuthMsg);
+    } catch {
+      showOBError('loginError', 'Could not reach server.');
+      btn.disabled = false; btn.textContent = 'Continue with Salesforce';
+    }
   }
 
   function showOBError(id, msg) {
@@ -820,9 +927,23 @@
   function renderHistoryMessages(messages) {
     if (!messages.length) { showEmpty(); return; }
     messages.forEach(m => {
-      if (m.role === 'user') addMsg('user', escHtml(m.content));
-      else if (m.soql)      addPastQueryCard(m.soql, m.content);
-      else                  addMsg('lasso', escHtml(m.content));
+      if (m.role === 'user') {
+        addMsg('user', escHtml(m.content));
+      } else if (m.role === 'result' && m.soql) {
+        // Re-render the full results table from stored JSON
+        try {
+          const records = JSON.parse(m.soql);
+          const match   = m.content.match(/(\d+)/);
+          const total   = match ? parseInt(match[1]) : records.length;
+          addResultsCard(records, total);
+        } catch {
+          addMsg('lasso', escHtml(m.content));
+        }
+      } else if (m.soql) {
+        addPastQueryCard(m.soql, m.content);
+      } else {
+        addMsg('lasso', escHtml(m.content));
+      }
     });
   }
 
@@ -840,7 +961,6 @@
     const inner = document.getElementById('messagesInner');
     inner.innerHTML = '';
     inner.appendChild(buildEmptyState());
-    window.lastResults = null;
   }
 
   function buildEmptyState() {
@@ -966,7 +1086,7 @@
       addMsg('lasso', 'Query ran successfully but returned no records.');
       return;
     }
-    const keys = Object.keys(records[0]).filter(k => k !== 'attributes');
+    const keys  = Object.keys(records[0]).filter(k => k !== 'attributes');
     const inner = document.getElementById('messagesInner');
     const wrapper = document.createElement('div');
     wrapper.className = 'msg lasso';
@@ -985,7 +1105,7 @@
         <div class="results-card">
           <div class="results-head">
             <div class="results-meta">Results <span class="results-count">${total} record${total !== 1 ? 's' : ''}</span></div>
-            <button class="btn-csv" onclick="downloadCSV()">
+            <button class="btn-csv" id="csvBtn_placeholder">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M6 1v7M3 5l3 3 3-3M1 10h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>Download CSV
@@ -997,8 +1117,10 @@
         </div>
       </div>`;
     inner.appendChild(wrapper);
+    // Bind download to THIS card's data via closure — survives session switching
+    wrapper.querySelector('#csvBtn_placeholder').removeAttribute('id');
+    wrapper.querySelector('.btn-csv').addEventListener('click', () => downloadCSV(records, keys));
     scrollBottom();
-    window.lastResults = { records, keys };
   }
 
   // ─── API calls ───────────────────────────────────────
@@ -1072,9 +1194,8 @@
   }
 
   // ─── CSV ─────────────────────────────────────────────
-  function downloadCSV() {
-    if (!window.lastResults) return;
-    const { records, keys } = window.lastResults;
+  function downloadCSV(records, keys) {
+    if (!records || !keys) return;
     const esc = v => {
       const s = String(v ?? '');
       return (s.includes(',') || s.includes('"') || s.includes('\n'))
@@ -1082,8 +1203,8 @@
     };
     const rows = [keys.join(','), ...records.map(r => keys.map(k => esc(r[k])).join(','))];
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
     a.href = url; a.download = `asklasso-export-${new Date().toISOString().slice(0,10)}.csv`; a.click();
     URL.revokeObjectURL(url);
   }

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset password · askLasso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --orange:       #E5622A;
+      --orange-light: #F07B4A;
+      --orange-pale:  #FEF0EA;
+      --orange-mid:   #FDDDD0;
+      --black:        #0D0D0D;
+      --gray-900:     #1A1A1A;
+      --gray-700:     #3D3D3D;
+      --gray-500:     #767676;
+      --gray-400:     #A0A0A0;
+      --gray-300:     #C4C4C4;
+      --gray-200:     #E8E8E8;
+      --gray-100:     #F4F4F4;
+      --gray-50:      #F9F9F9;
+      --white:        #FFFFFF;
+      --red:          #DC2626;
+      --red-pale:     #FEF2F2;
+      --red-border:   #FECACA;
+      --radius-sm:    8px;
+      --radius-xl:    24px;
+      --shadow-lg:    0 12px 32px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.05);
+      --font:         'Sora', sans-serif;
+      --t:            150ms cubic-bezier(.4,0,.2,1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--gray-50);
+      color: var(--black);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeUp .3s ease both;
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 36px;
+      text-decoration: none;
+    }
+    .logo-bars { display: flex; flex-direction: column; gap: 3px; }
+    .logo-bars span { display: block; height: 4px; border-radius: 2px; background: var(--orange); }
+    .logo-bars span:nth-child(1) { width: 20px; }
+    .logo-bars span:nth-child(2) { width: 15px; opacity: .7; }
+    .logo-bars span:nth-child(3) { width: 10px; opacity: .45; }
+    .logo-text { font-size: 20px; font-weight: 600; letter-spacing: -.4px; color: var(--black); }
+    .logo-text em { font-style: normal; color: var(--orange); }
+
+    h2 { font-size: 22px; font-weight: 600; letter-spacing: -.4px; margin-bottom: 6px; }
+    .sub { font-size: 14px; color: var(--gray-500); line-height: 1.55; margin-bottom: 28px; }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--gray-700); margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: 14px; color: var(--black);
+      background: var(--white); outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .field input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(229,98,42,.12); }
+    .field input::placeholder { color: var(--gray-300); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 20px; border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: 14px; font-weight: 500;
+      cursor: pointer; border: none; width: 100%;
+      transition: all var(--t);
+    }
+    .btn:disabled { opacity: .55; cursor: not-allowed; pointer-events: none; }
+    .btn-primary { background: var(--orange); color: var(--white); }
+    .btn-primary:hover { background: var(--orange-light); box-shadow: 0 4px 12px rgba(229,98,42,.28); transform: translateY(-1px); }
+
+    .error {
+      background: var(--red-pale); border: 1px solid var(--red-border);
+      color: var(--red); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none;
+    }
+    .error.show { display: block; }
+
+    .success {
+      text-align: center; padding: 16px 0 8px;
+    }
+    .success-icon {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--orange-pale); border: 2px solid var(--orange-mid);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .success h2 { margin-bottom: 8px; }
+    .success p { font-size: 14px; color: var(--gray-500); line-height: 1.6; margin-bottom: 24px; }
+    .back-link {
+      display: inline-block; font-size: 13px; color: var(--orange);
+      text-decoration: none; font-weight: 500;
+    }
+    .back-link:hover { text-decoration: underline; }
+
+    .invalid-state { text-align: center; padding: 16px 0 8px; }
+    .invalid-state p { font-size: 14px; color: var(--gray-500); line-height: 1.6; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <a class="logo" href="/">
+    <div class="logo-bars"><span></span><span></span><span></span></div>
+    <span class="logo-text">Ask<em>Lasso</em></span>
+  </a>
+
+  <!-- Invalid / missing token state -->
+  <div id="invalidState" class="invalid-state" style="display:none;">
+    <h2 style="margin-bottom:12px;">Link invalid or expired</h2>
+    <p>This password reset link has already been used or has expired.<br>Reset links are valid for 1 hour.</p>
+    <a class="back-link" href="/">← Back to sign in</a>
+  </div>
+
+  <!-- Reset form -->
+  <div id="resetForm">
+    <h2>Set new password</h2>
+    <p class="sub">Choose a strong password — at least 8 characters.</p>
+    <div id="resetError" class="error"></div>
+    <div class="field">
+      <label>New password</label>
+      <input id="newPassword" type="password" placeholder="Min. 8 characters"
+        onkeydown="if(event.key==='Enter') submitReset()" autofocus />
+    </div>
+    <div class="field">
+      <label>Confirm password</label>
+      <input id="confirmPassword" type="password" placeholder="Repeat password"
+        onkeydown="if(event.key==='Enter') submitReset()" />
+    </div>
+    <button class="btn btn-primary" id="resetBtn" onclick="submitReset()">Set new password</button>
+  </div>
+
+  <!-- Success state -->
+  <div id="successState" class="success" style="display:none;">
+    <div class="success-icon">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M4 11l5 5 9-9" stroke="var(--orange)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>Password updated</h2>
+    <p>Your password has been changed successfully. You can now sign in with your new password.</p>
+    <a class="back-link" href="/">← Back to sign in</a>
+  </div>
+</div>
+
+<script>
+  const API = 'https://pulldata-production.up.railway.app';
+
+  // Parse token and id from URL
+  const params   = new URLSearchParams(window.location.search);
+  const rawToken = params.get('token');
+  const tokenId  = params.get('id');
+
+  if (!rawToken || !tokenId) {
+    document.getElementById('resetForm').style.display    = 'none';
+    document.getElementById('invalidState').style.display = 'block';
+  }
+
+  async function submitReset() {
+    const newPass     = document.getElementById('newPassword').value;
+    const confirmPass = document.getElementById('confirmPassword').value;
+    const errorEl     = document.getElementById('resetError');
+
+    errorEl.textContent = ''; errorEl.classList.remove('show');
+
+    if (!newPass || !confirmPass) {
+      errorEl.textContent = 'Please fill in both fields.'; errorEl.classList.add('show'); return;
+    }
+    if (newPass.length < 8) {
+      errorEl.textContent = 'Password must be at least 8 characters.'; errorEl.classList.add('show'); return;
+    }
+    if (newPass !== confirmPass) {
+      errorEl.textContent = 'Passwords do not match.'; errorEl.classList.add('show'); return;
+    }
+
+    const btn = document.getElementById('resetBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    try {
+      const res  = await fetch(`${API}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: rawToken, id: tokenId, password: newPass })
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        document.getElementById('resetForm').style.display    = 'none';
+        document.getElementById('successState').style.display = 'block';
+      } else {
+        const msg = data.error || 'Something went wrong. Please try again.';
+        if (msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')) {
+          document.getElementById('resetForm').style.display    = 'none';
+          document.getElementById('invalidState').style.display = 'block';
+        } else {
+          errorEl.textContent = msg; errorEl.classList.add('show');
+          btn.disabled = false; btn.textContent = 'Set new password';
+        }
+      }
+    } catch {
+      errorEl.textContent = 'Could not reach server. Please try again.';
+      errorEl.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Set new password';
+    }
+  }
+</script>
+</body>
+</html>

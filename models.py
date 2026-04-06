@@ -36,51 +36,63 @@ class Organization(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     api_keys = relationship('ApiKey', back_populates='organization')
-    users = relationship('User', back_populates='organization')
+    users    = relationship('User', back_populates='organization')
 
 class ApiKey(Base):
     __tablename__ = 'api_keys'
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    org_id = Column(String, ForeignKey('organizations.id'), nullable=False)
-    key_hash = Column(String, nullable=False)
-    label = Column(String)
-    active = Column(Boolean, default=True)
+    id         = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    org_id     = Column(String, ForeignKey('organizations.id'), nullable=False)
+    key_hash   = Column(String, nullable=False)
+    label      = Column(String)
+    active     = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     organization = relationship('Organization', back_populates='api_keys')
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    org_id = Column(String, ForeignKey('organizations.id'), nullable=False)
-    email = Column(String, nullable=False, unique=True)
+    id            = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    org_id        = Column(String, ForeignKey('organizations.id'), nullable=False)
+    email         = Column(String, nullable=False, unique=True)
     password_hash = Column(String, nullable=False)
-    role = Column(String, default='user')
-    created_at = Column(DateTime, default=datetime.utcnow)
+    role          = Column(String, default='user')
+    created_at    = Column(DateTime, default=datetime.utcnow)
 
     organization = relationship('Organization', back_populates='users')
-    sessions = relationship('ChatSession', back_populates='user')
+    sessions     = relationship('ChatSession', back_populates='user')
 
 class ChatSession(Base):
     __tablename__ = 'sessions'
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, ForeignKey('users.id'), nullable=False)
-    title = Column(String, default='New session')
+    id         = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id    = Column(String, ForeignKey('users.id'), nullable=False)
+    title      = Column(String, default='New session')
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship('User', back_populates='sessions')
+    user     = relationship('User', back_populates='sessions')
     messages = relationship('Message', back_populates='session')
 
 class Message(Base):
     __tablename__ = 'messages'
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    id         = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String, ForeignKey('sessions.id'), nullable=False)
-    role = Column(String, nullable=False)
-    content = Column(Text, nullable=False)
-    soql = Column(Text)
+    role       = Column(String, nullable=False)   # 'user' | 'assistant' | 'result'
+    content    = Column(Text, nullable=False)
+    soql       = Column(Text)  # SOQL for assistant msgs; JSON records array for role='result'
     created_at = Column(DateTime, default=datetime.utcnow)
 
     session = relationship('ChatSession', back_populates='messages')
+
+class PasswordResetToken(Base):
+    """One-time tokens for password reset emails. New table — created by init_db()."""
+    __tablename__ = 'password_reset_tokens'
+    id         = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id    = Column(String, ForeignKey('users.id'), nullable=False)
+    token_hash = Column(String, nullable=False)   # bcrypt hash of the raw URL token
+    expires_at = Column(DateTime, nullable=False)
+    used       = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship('User')
 
 # --- Helper functions ---
 
@@ -98,5 +110,5 @@ def check_password(password, hashed):
 
 def init_db():
     engine = get_engine()
-    Base.metadata.create_all(engine)
-    print("Database tables created.")
+    Base.metadata.create_all(engine)   # creates missing tables; existing tables untouched
+    print("Database tables created/verified.")
